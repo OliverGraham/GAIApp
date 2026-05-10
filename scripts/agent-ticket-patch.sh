@@ -4,27 +4,57 @@ set -euo pipefail
 MODEL="${MODEL:-qwen3:14b}"
 BASE_BRANCH="${BASE_BRANCH:-main}"
 BACKLOG_FILE="${BACKLOG_FILE:-tickets/backlog.md}"
+DONE_FILE="${DONE_FILE:-.agent/done-tickets.txt}"
+MAX_FIX_ATTEMPTS="${MAX_FIX_ATTEMPTS:-0}"
 TICKET="${1:-}"
 
 if [ -z "$TICKET" ]; then
   echo "Usage: MODEL=\"qwen3:14b\" scripts/agent-ticket-patch.sh TODO-001"
-  exit 2
+  exit 1
 fi
 
-if [ ! -f "$BACKLOG_FILE" ]; then
-  echo "FAILED: Backlog file not found: $BACKLOG_FILE"
-  exit 3
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "FAILED: Working tree has uncommitted changes. Commit or stash them first."
+  exit 1
 fi
 
-if ! command -v ollama >/dev/null 2>&1; then
-  echo "FAILED: ollama command not found."
-  exit 4
-fi
+run_aider() {
+  python3 -m aider "$@"
+}
 
-if ! grep -q "## $TICKET:" "$BACKLOG_FILE"; then
-  echo "FAILED: Ticket not found in $BACKLOG_FILE: $TICKET"
-  exit 5
-fi
+record_ticket_done_locally() {
+  mkdir -p "$(dirname "$DONE_FILE")"
+  grep -qxF "$TICKET" "$DONE_FILE" 2>/dev/null || echo "$TICKET" >> "$DONE_FILE"
+}
+
+mark_ticket_done() {
+  python3 - "$BACKLOG_FILE" "$TICKET" <<'PY'
+import re
+import sys
+
+path, ticket = sys.argv[1], sys.argv[2]
+
+with open(path, "r", encoding="utf-8") as f:
+    text = f.read()
+
+done_ticket = ticket.replace("TODO-", "DONE-", 1)
+
+new_text, count = re.subn(
+    rf"^## {re.escape(ticket)}:",
+    f"## {done_ticket}:",
+    text,
+    count=1,
+    flags=re.M,
+)
+
+if count != 1:
+    print(f"FAILED: Could not mark ticket done: {ticket}")
+    sys.exit(1)
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write(new_text)
+PY
+}
 
 TICKET_TEXT="$(
   awk -v ticket="$TICKET" '
@@ -36,7 +66,7 @@ TICKET_TEXT="$(
 
 if [ -z "$TICKET_TEXT" ]; then
   echo "FAILED: Could not extract ticket text for $TICKET."
-  exit 6
+  exit 1
 fi
 
 git fetch origin "$BASE_BRANCH"
@@ -47,145 +77,82 @@ SLUG="$(echo "$TICKET" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; 
 BRANCH="agent/${SLUG}-$(date +%Y%m%d-%H%M%S)"
 git checkout -b "$BRANCH"
 
-OUT_DIR="composeApp/src/commonMain/kotlin/com/gainus/gaiapp"
-OUT_FILE="$OUT_DIR/Task.kt"
-TMP_FILE="$(mktemp)"
+AIDER_MODEL="ollama_chat/$MODEL"
 
-mkdir -p "$OUT_DIR"
-
-ollama run "$MODEL" <<EOF > "$TMP_FILE"
-/no_think
-
-You are implementing one narrow ticket in a Kotlin Multiplatform Compose project.
-
-Project package:
-com.gainus.gaiapp
+IMPLEMENT_PROMPT="$(
+  cat <<EOF
+Implement this ticket in the Kotlin Multiplatform Compose app.
 
 Ticket:
 $TICKET_TEXT
 
-Return ONLY the complete Kotlin source code for this file:
-$OUT_FILE
-
 Rules:
-- No markdown.
-- No code fences.
-- No explanation.
-- No reasoning.
-- No analysis.
-- No notes before or after the code.
-- The first line of your answer must be: package com.gainus.gaiapp
-- The file must compile.
-- Use package com.gainus.gaiapp.
-- Implement only this ticket.
-- Do not include TODO comments.
-- Do not create placeholders.
+- Edit the repository files directly.
+- Keep the change minimal.
+- Do not commit.
+- Do not add persistence unless the ticket asks for it.
+- Do not add new dependencies unless the ticket asks for them.
+- Do not create placeholder classes.
+- Do not leave TODO comments.
+- You must change app source code under composeApp/src/commonMain.
 EOF
+)"
 
-python3 - "$TMP_FILE" "$OUT_FILE" <<'PY'
-import re
-import sys
+echo "Asking Aider to implement $TICKET..."
 
-tmp_file = sys.argv[1]
-out_file = sys.argv[2]
+run_aider \
+  --model "$AIDER_MODEL" \
+  --no-show-model-warnings \
+  --yes-always \
+  --no-auto-commits \
+  --message "$IMPLEMENT_PROMPT"
 
-raw = open(tmp_file, "rb").read().decode("utf-8", errors="ignore")
-
-# Remove ANSI escape sequences.
-raw = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", raw)
-
-# Remove simple terminal backspace artifacts.
-while "\b" in raw:
-    raw = re.sub(r".\b", "", raw)
-
-matches = list(re.finditer(r"(?m)^package com\.gainus\.gaiapp\s*$", raw))
-
-if not matches:
-    print("FAILED: Model output did not contain package declaration.")
-    print(raw)
-    sys.exit(10)
-
-# Use the final package block because Qwen may emit a draft, then reasoning, then final code.
-code = raw[matches[-1].start():].strip() + "\n"
-
-bad_markers = [
-    "\n```",
-    "\n...done thinking",
-    "\nI think",
-    "\nLet me",
-    "\nThis code",
-    "\nExplanation",
-    "\nNotes",
-]
-
-for marker in bad_markers:
-    idx = code.find(marker)
-    if idx != -1:
-        code = code[:idx].rstrip() + "\n"
-
-open(out_file, "w", encoding="utf-8").write(code)
-PY
-
-if [ ! -s "$OUT_FILE" ]; then
-  echo "FAILED: Model did not produce Kotlin file content."
-  echo "Raw output:"
-  cat "$TMP_FILE"
-  exit 10
+if git diff --quiet -- composeApp/src/commonMain; then
+  echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
+  exit 1
 fi
 
-if [ "$(grep -c "^package com\.gainus\.gaiapp" "$OUT_FILE")" -ne 1 ]; then
-  echo "FAILED: Output contains multiple package declarations."
-  cat "$OUT_FILE"
-  exit 11
-fi
+BUILD_LOG="$(mktemp)"
+attempt=0
 
-if ! grep -q "^package com\.gainus\.gaiapp" "$OUT_FILE"; then
-  echo "FAILED: Output has wrong or missing package."
-  cat "$OUT_FILE"
-  exit 12
-fi
+while true; do
+  if ./gradlew --no-daemon build >"$BUILD_LOG" 2>&1; then
+    break
+  fi
 
-if ! grep -q "data class Task" "$OUT_FILE"; then
-  echo "FAILED: Output does not contain Task data class."
-  cat "$OUT_FILE"
-  exit 13
-fi
+  attempt=$((attempt + 1))
 
-if ! grep -q "val id" "$OUT_FILE"; then
-  echo "FAILED: Task is missing id field."
-  cat "$OUT_FILE"
-  exit 14
-fi
+  if [ "$MAX_FIX_ATTEMPTS" != "0" ] && [ "$attempt" -gt "$MAX_FIX_ATTEMPTS" ]; then
+    echo "FAILED: Gradle build still failing after $MAX_FIX_ATTEMPTS fix attempts."
+    cat "$BUILD_LOG"
+    exit 1
+  fi
 
-if ! grep -q "val title" "$OUT_FILE"; then
-  echo "FAILED: Task is missing title field."
-  cat "$OUT_FILE"
-  exit 15
-fi
+  echo "Build failed. Asking Aider to fix it. Attempt $attempt."
 
-if ! grep -q "isDone" "$OUT_FILE"; then
-  echo "FAILED: Task is missing isDone field."
-  cat "$OUT_FILE"
-  exit 16
-fi
+  FIX_PROMPT="$(
+    cat <<EOF
+The Gradle build failed while implementing $TICKET.
 
-if ! grep -Eq "sample|Sample|createSample" "$OUT_FILE"; then
-  echo "FAILED: Output does not appear to include sample task helper."
-  cat "$OUT_FILE"
-  exit 17
-fi
+Fix the build without expanding the ticket scope.
 
-if grep -Eiq "TODO|placeholder|not implemented|throw NotImplementedError" "$OUT_FILE"; then
-  echo "FAILED: Placeholder output detected."
-  cat "$OUT_FILE"
-  exit 18
-fi
+Build output:
+$(tail -n 200 "$BUILD_LOG")
+EOF
+  )"
 
-if grep -Eiq "wait,|probably|better|simplicity|straightforward|I think|Let me|done thinking|reasoning|analysis|I need|No persistence|That should meet" "$OUT_FILE"; then
-  echo "FAILED: Model reasoning leaked into source file."
-  cat "$OUT_FILE"
-  exit 19
-fi
+  run_aider \
+    --model "$AIDER_MODEL" \
+    --no-show-model-warnings \
+    --yes-always \
+    --no-auto-commits \
+    --message "$FIX_PROMPT"
+
+  if git diff --quiet -- composeApp/src/commonMain; then
+    echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
+    exit 1
+  fi
+done
 
 cat > AGENT_RESULT.md <<EOF
 # Agent Result
@@ -194,34 +161,24 @@ Ticket implemented: $TICKET
 
 Model: $MODEL
 
-Files changed:
-- $OUT_FILE
-
 Checks run:
-- Gradle build attempted by script
+- Gradle build
 EOF
-
-if [ -x ./gradlew ]; then
-  ./gradlew --no-daemon build
-else
-  echo "WARNING: ./gradlew not found or not executable; skipping build."
-fi
-
-if git diff --quiet; then
-  echo "FAILED: No changes produced."
-  exit 20
-fi
 
 git add -A
 git commit -m "Implement $TICKET"
 git push -u origin "$BRANCH"
 
-if command -v gh >/dev/null 2>&1; then
-  gh pr create \
-    --base "$BASE_BRANCH" \
-    --head "$BRANCH" \
-    --title "Implement $TICKET" \
-    --body-file AGENT_RESULT.md
-else
-  echo "WARNING: gh command not found; branch was pushed but PR was not created."
-fi
+gh pr create \
+  --base "$BASE_BRANCH" \
+  --head "$BRANCH" \
+  --title "Implement $TICKET" \
+  --body-file AGENT_RESULT.md
+
+mark_ticket_done
+
+git add "$BACKLOG_FILE"
+git commit -m "Mark $TICKET done"
+git push
+
+record_ticket_done_locally

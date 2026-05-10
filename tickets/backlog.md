@@ -1,6 +1,6 @@
 # Backlog
 
-## TODO-001: Add basic task model
+## DONE-001: Add basic task model
 
 Create a shared task model for the app.
 
