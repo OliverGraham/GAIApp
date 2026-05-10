@@ -29,7 +29,7 @@ Acceptance:
 - Screen uses shared Compose code.
 - No empty placeholder classes.
 
-## TODO-003: Add add-task UI state
+## DONE-003: Add add-task UI state
 
 Add local UI state for creating tasks.
 
