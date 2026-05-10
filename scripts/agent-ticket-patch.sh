@@ -13,6 +13,11 @@ if [ -z "$TICKET" ]; then
   exit 1
 fi
 
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "FAILED: Working tree has uncommitted changes. Commit or stash them first."
+  exit 1
+fi
+
 run_aider() {
   python3 -m aider "$@"
 }
@@ -89,6 +94,7 @@ Rules:
 - Do not add new dependencies unless the ticket asks for them.
 - Do not create placeholder classes.
 - Do not leave TODO comments.
+- You must change app source code under composeApp/src/commonMain.
 EOF
 )"
 
@@ -100,6 +106,11 @@ run_aider \
   --yes-always \
   --no-auto-commits \
   --message "$IMPLEMENT_PROMPT"
+
+if git diff --quiet -- composeApp/src/commonMain; then
+  echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
+  exit 1
+fi
 
 BUILD_LOG="$(mktemp)"
 attempt=0
@@ -136,12 +147,12 @@ EOF
     --yes-always \
     --no-auto-commits \
     --message "$FIX_PROMPT"
-done
 
-if git diff --quiet; then
-  echo "FAILED: No changes produced."
-  exit 1
-fi
+  if git diff --quiet -- composeApp/src/commonMain; then
+    echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
+    exit 1
+  fi
+done
 
 cat > AGENT_RESULT.md <<EOF
 # Agent Result
