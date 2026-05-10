@@ -14,7 +14,7 @@ Acceptance:
 - App compiles.
 - Sample tasks can be used by UI.
 
-## TODO-002: Add todo list screen
+## DONE-002: Add todo list screen
 
 Create a Compose screen that displays todo items.
 
