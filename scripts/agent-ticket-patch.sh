@@ -38,15 +38,9 @@ git checkout -b "$BRANCH_NAME"
 mkdir -p "$(dirname "$DONE_TICKETS_FILE")"
 touch "$DONE_TICKETS_FILE"
 
-mapfile -t AIDER_FILES < <(
-  git ls-files \
-    "*.kt" \
-    "*.kts" \
-    "$BACKLOG_FILE" \
-    "$DONE_TICKETS_FILE"
-)
+AIDER_FILES="$(git ls-files "*.kt" "*.kts" "$BACKLOG_FILE" "$DONE_TICKETS_FILE")"
 
-if [ "${#AIDER_FILES[@]}" -eq 0 ]; then
+if [ -z "$AIDER_FILES" ]; then
   echo "FAILED: No editable project files found for Aider."
   exit 1
 fi
@@ -74,7 +68,7 @@ EOF
 
 echo "Asking Aider to implement $TICKET_ID with $MODEL..."
 
-python3 -m aider "${AIDER_FILES[@]}" \
+python3 -m aider $AIDER_FILES \
   --model "$MODEL" \
   --edit-format diff \
   --no-restore-chat-history \
@@ -94,13 +88,7 @@ echo "Running Gradle build..."
 if ! ./gradlew build; then
   echo "Gradle build failed. Asking Aider to fix it..."
 
-  mapfile -t AIDER_FILES < <(
-    git ls-files \
-      "*.kt" \
-      "*.kts" \
-      "$BACKLOG_FILE" \
-      "$DONE_TICKETS_FILE"
-  )
+  AIDER_FILES="$(git ls-files "*.kt" "*.kts" "$BACKLOG_FILE" "$DONE_TICKETS_FILE")"
 
   FIX_PROMPT="$(cat <<EOF
 The Gradle build failed after implementing $TICKET_ID.
@@ -118,7 +106,7 @@ Stop after fixing the build.
 EOF
 )"
 
-  python3 -m aider "${AIDER_FILES[@]}" \
+  python3 -m aider $AIDER_FILES \
     --model "$MODEL" \
     --edit-format diff \
     --no-restore-chat-history \
