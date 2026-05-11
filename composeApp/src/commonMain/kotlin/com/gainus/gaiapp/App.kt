@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -89,25 +91,37 @@ fun TodoListScreen() {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(tasks) { task ->
-                        Row(
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
                         ) {
-                            Checkbox(
-                                checked = task.isDone,
-                                onCheckedChange = { task.isDone = it }
-                            )
-                            Text(
-                                text = task.title,
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp)
-                            )
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = task.isDone,
+                                    onCheckedChange = { task.isDone = it }
+                                )
+                                Text(
+                                    text = task.title,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp)
+                                )
+                            }
                         }
                     }
                 }
