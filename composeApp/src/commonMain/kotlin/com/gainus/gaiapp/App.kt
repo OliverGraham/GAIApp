@@ -75,28 +75,40 @@ fun TodoListScreen() {
             }
 
             // Task list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                items(tasks) { task ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = task.isDone,
-                            onCheckedChange = { task.isDone = it }
-                        )
-                        Text(
-                            text = task.title,
+            if (tasks.isEmpty()) {
+                Text(
+                    text = "No tasks yet",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(16.dp),
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    items(tasks) { task ->
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp)
-                        )
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = task.isDone,
+                                onCheckedChange = { task.isDone = it }
+                            )
+                            Text(
+                                text = task.title,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp)
+                            )
+                        }
                     }
                 }
             }

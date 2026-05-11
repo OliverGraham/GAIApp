@@ -56,7 +56,7 @@ Acceptance:
 - State updates immediately.
 - Existing task list remains visible.
 
-## TODO-005: Add empty state
+## DONE-005: Add empty state
 
 Show an empty state when there are no tasks.
 
