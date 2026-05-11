@@ -35,16 +35,36 @@ git checkout main
 git pull origin main
 git checkout -b "$BRANCH_NAME"
 
+mkdir -p "$(dirname "$DONE_TICKETS_FILE")"
+touch "$DONE_TICKETS_FILE"
+
+mapfile -t AIDER_FILES < <(
+  git ls-files \
+    "*.kt" \
+    "*.kts" \
+    "$BACKLOG_FILE" \
+    "$DONE_TICKETS_FILE"
+)
+
+if [ "${#AIDER_FILES[@]}" -eq 0 ]; then
+  echo "FAILED: No editable project files found for Aider."
+  exit 1
+fi
+
 AIDER_PROMPT="$(cat <<EOF
 Implement $TICKET_ID from $BACKLOG_FILE.
 
-Edit the repository directly.
+Edit the repository files directly.
+Do not ask follow-up questions.
 Do not ask me to add files.
 Do not only describe changes.
-Use the whole Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
+If there is ambiguity, make the best reasonable implementation choice and edit files.
+If a previous attempt partially failed, re-apply the needed changes directly.
+Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
 Use the existing package name com.gainus.gaiapp.
 Keep the implementation minimal but real.
 Do not mark the ticket done.
+Do not update $DONE_TICKETS_FILE.
 Do not commit changes.
 Stop after code changes.
 
@@ -54,8 +74,9 @@ EOF
 
 echo "Asking Aider to implement $TICKET_ID with $MODEL..."
 
-python3 -m aider . \
+python3 -m aider "${AIDER_FILES[@]}" \
   --model "$MODEL" \
+  --edit-format diff \
   --no-restore-chat-history \
   --chat-history-file /tmp/gaiapp-aider.chat.history.md \
   --input-history-file /tmp/gaiapp-aider.input.history \
@@ -73,21 +94,33 @@ echo "Running Gradle build..."
 if ! ./gradlew build; then
   echo "Gradle build failed. Asking Aider to fix it..."
 
+  mapfile -t AIDER_FILES < <(
+    git ls-files \
+      "*.kt" \
+      "*.kts" \
+      "$BACKLOG_FILE" \
+      "$DONE_TICKETS_FILE"
+  )
+
   FIX_PROMPT="$(cat <<EOF
 The Gradle build failed after implementing $TICKET_ID.
 
-Fix the build by editing the repository directly.
+Fix the build by editing repository files directly.
+Do not ask follow-up questions.
 Do not ask me to add files.
 Do not only describe changes.
-Use the whole Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
+If there is ambiguity, make the best reasonable implementation choice and edit files.
+Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
 Do not mark the ticket done.
+Do not update $DONE_TICKETS_FILE.
 Do not commit changes.
 Stop after fixing the build.
 EOF
 )"
 
-  python3 -m aider . \
+  python3 -m aider "${AIDER_FILES[@]}" \
     --model "$MODEL" \
+    --edit-format diff \
     --no-restore-chat-history \
     --chat-history-file /tmp/gaiapp-aider.chat.history.md \
     --input-history-file /tmp/gaiapp-aider.input.history \
@@ -102,9 +135,6 @@ echo "Marking $TICKET_ID done..."
 
 sed -i.bak "s/^## $TICKET_ID:/## ${TICKET_ID/TODO/DONE}:/" "$BACKLOG_FILE"
 rm -f "$BACKLOG_FILE.bak"
-
-mkdir -p "$(dirname "$DONE_TICKETS_FILE")"
-touch "$DONE_TICKETS_FILE"
 
 if ! grep -qx "$TICKET_ID" "$DONE_TICKETS_FILE"; then
   echo "$TICKET_ID" >> "$DONE_TICKETS_FILE"
