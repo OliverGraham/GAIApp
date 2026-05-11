@@ -1,5 +1,6 @@
 package com.gainus.gaiapp
 
+import com.gainus.gaiapp.randomUUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -12,7 +13,7 @@ class InMemoryTaskRepository : TaskRepository {
 
     override fun addTask(task: Task) {
         _tasks.update { currentTasks ->
-            currentTasks + task.copy(id = randomUUID())
+            currentTasks + task
         }
     }
 
