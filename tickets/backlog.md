@@ -99,7 +99,7 @@ Acceptance:
 - UI no longer owns all task mutation logic directly.
 - Task operations go through the repository contract.
 
-## TODO-008: Add in-memory task repository implementation
+## DONE-008: Add in-memory task repository implementation
 
 Move runtime task storage behind the repository abstraction.
 
