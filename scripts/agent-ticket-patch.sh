@@ -1,184 +1,138 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL="${MODEL:-qwen3:14b}"
-BASE_BRANCH="${BASE_BRANCH:-main}"
-BACKLOG_FILE="${BACKLOG_FILE:-tickets/backlog.md}"
-DONE_FILE="${DONE_FILE:-.agent/done-tickets.txt}"
-MAX_FIX_ATTEMPTS="${MAX_FIX_ATTEMPTS:-0}"
-TICKET="${1:-}"
+TICKET_ID="${1:-}"
 
-if [ -z "$TICKET" ]; then
-  echo "Usage: MODEL=\"qwen3:14b\" scripts/agent-ticket-patch.sh TODO-001"
+if [ -z "$TICKET_ID" ]; then
+  echo "Usage: scripts/agent-ticket-patch.sh TODO-XXX"
   exit 1
 fi
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "FAILED: Working tree has uncommitted changes. Commit or stash them first."
+BACKLOG_FILE="tickets/backlog.md"
+SOURCE_DIR="composeApp/src/commonMain/kotlin"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
+
+if [ ! -f "$BACKLOG_FILE" ]; then
+  echo "FAILED: $BACKLOG_FILE not found."
   exit 1
 fi
 
-run_aider() {
-  python3 -m aider "$@"
-}
-
-record_ticket_done_locally() {
-  mkdir -p "$(dirname "$DONE_FILE")"
-  grep -qxF "$TICKET" "$DONE_FILE" 2>/dev/null || echo "$TICKET" >> "$DONE_FILE"
-}
-
-mark_ticket_done() {
-  python3 - "$BACKLOG_FILE" "$TICKET" <<'PY'
-import re
-import sys
-
-path, ticket = sys.argv[1], sys.argv[2]
-
-with open(path, "r", encoding="utf-8") as f:
-    text = f.read()
-
-done_ticket = ticket.replace("TODO-", "DONE-", 1)
-
-new_text, count = re.subn(
-    rf"^## {re.escape(ticket)}:",
-    f"## {done_ticket}:",
-    text,
-    count=1,
-    flags=re.M,
-)
-
-if count != 1:
-    print(f"FAILED: Could not mark ticket done: {ticket}")
-    sys.exit(1)
-
-with open(path, "w", encoding="utf-8") as f:
-    f.write(new_text)
-PY
-}
-
-TICKET_TEXT="$(
-  awk -v ticket="$TICKET" '
-    $0 ~ "^## " ticket ":" { found = 1 }
-    found && /^## / && $0 !~ "^## " ticket ":" { exit }
-    found { print }
-  ' "$BACKLOG_FILE"
-)"
-
-if [ -z "$TICKET_TEXT" ]; then
-  echo "FAILED: Could not extract ticket text for $TICKET."
+if ! grep -q "^## $TICKET_ID:" "$BACKLOG_FILE"; then
+  echo "FAILED: $TICKET_ID not found in $BACKLOG_FILE."
   exit 1
 fi
 
-git fetch origin "$BASE_BRANCH"
-git checkout "$BASE_BRANCH"
-git pull --ff-only origin "$BASE_BRANCH"
+if [ ! -d "$SOURCE_DIR" ]; then
+  echo "FAILED: $SOURCE_DIR not found."
+  exit 1
+fi
 
-SLUG="$(echo "$TICKET" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-|-$//g')"
-BRANCH="agent/${SLUG}-$(date +%Y%m%d-%H%M%S)"
-git checkout -b "$BRANCH"
+echo "Preparing branch for $TICKET_ID..."
 
-AIDER_MODEL="ollama_chat/$MODEL"
+git checkout main
+git pull origin main
 
-IMPLEMENT_PROMPT="$(
-  cat <<EOF
-Implement this ticket in the Kotlin Multiplatform Compose app.
+git checkout -b "$BRANCH_NAME"
 
-Ticket:
-$TICKET_TEXT
+AIDER_PROMPT="$(cat <<EOF
+Implement $TICKET_ID from $BACKLOG_FILE.
 
-Rules:
-- Edit the repository files directly.
-- Keep the change minimal.
-- Do not commit.
-- Do not add persistence unless the ticket asks for it.
-- Do not add new dependencies unless the ticket asks for them.
-- Do not create placeholder classes.
-- Do not leave TODO comments.
-- You must change app source code under composeApp/src/commonMain.
+Edit the repository directly.
+Do not ask me to add files.
+Do not only describe changes.
+Create, modify, and delete files as needed under $SOURCE_DIR.
+Use the existing app structure and package names.
+Keep the implementation minimal but real.
+Do not mark the ticket done.
+Do not commit changes.
+Stop after code changes.
+
+The backlog entry to implement is $TICKET_ID.
 EOF
 )"
 
-echo "Asking Aider to implement $TICKET..."
+echo "Asking Aider to implement $TICKET_ID..."
 
-run_aider \
-  --model "$AIDER_MODEL" \
-  --no-show-model-warnings \
+BEFORE_STATUS="$(git status --porcelain "$SOURCE_DIR" "$BACKLOG_FILE" || true)"
+
+python3 -m aider \
+  --model ollama_chat/qwen3:14b \
+  --no-restore-chat-history \
+  --chat-history-file /tmp/gaiapp-aider.chat.history.md \
+  --input-history-file /tmp/gaiapp-aider.input.history \
   --yes-always \
   --no-auto-commits \
-  --message "$IMPLEMENT_PROMPT"
+  --message "$AIDER_PROMPT" \
+  "$SOURCE_DIR" \
+  "$BACKLOG_FILE"
 
-if git diff --quiet -- composeApp/src/commonMain; then
-  echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
+AFTER_STATUS="$(git status --porcelain "$SOURCE_DIR" "$BACKLOG_FILE" || true)"
+
+if [ "$BEFORE_STATUS" = "$AFTER_STATUS" ]; then
+  echo "FAILED: Aider did not change app source code under $SOURCE_DIR."
   exit 1
 fi
 
-BUILD_LOG="$(mktemp)"
-attempt=0
+echo "Running Gradle build..."
 
-while true; do
-  if ./gradlew --no-daemon build >"$BUILD_LOG" 2>&1; then
-    break
-  fi
+if ! ./gradlew build; then
+  echo "Gradle build failed. Asking Aider to fix it..."
 
-  attempt=$((attempt + 1))
+  FIX_PROMPT="$(cat <<EOF
+The Gradle build failed after implementing $TICKET_ID.
 
-  if [ "$MAX_FIX_ATTEMPTS" != "0" ] && [ "$attempt" -gt "$MAX_FIX_ATTEMPTS" ]; then
-    echo "FAILED: Gradle build still failing after $MAX_FIX_ATTEMPTS fix attempts."
-    cat "$BUILD_LOG"
-    exit 1
-  fi
-
-  echo "Build failed. Asking Aider to fix it. Attempt $attempt."
-
-  FIX_PROMPT="$(
-    cat <<EOF
-The Gradle build failed while implementing $TICKET.
-
-Fix the build without expanding the ticket scope.
-
-Build output:
-$(tail -n 200 "$BUILD_LOG")
+Fix the build by editing the repository directly.
+Do not ask me to add files.
+Do not only describe changes.
+Modify files under $SOURCE_DIR or Gradle files only if needed.
+Do not mark the ticket done.
+Do not commit changes.
+Stop after fixing the build.
 EOF
-  )"
+)"
 
-  run_aider \
-    --model "$AIDER_MODEL" \
-    --no-show-model-warnings \
+  python3 -m aider \
+    --model ollama_chat/qwen3:14b \
+    --no-restore-chat-history \
+    --chat-history-file /tmp/gaiapp-aider.chat.history.md \
+    --input-history-file /tmp/gaiapp-aider.input.history \
     --yes-always \
     --no-auto-commits \
-    --message "$FIX_PROMPT"
+    --message "$FIX_PROMPT" \
+    "$SOURCE_DIR" \
+    "$BACKLOG_FILE" \
+    "build.gradle.kts" \
+    "composeApp/build.gradle.kts" \
+    "settings.gradle.kts"
 
-  if git diff --quiet -- composeApp/src/commonMain; then
-    echo "FAILED: Aider did not change app source code under composeApp/src/commonMain."
-    exit 1
-  fi
-done
+  ./gradlew build
+fi
 
-cat > AGENT_RESULT.md <<EOF
-# Agent Result
+echo "Marking $TICKET_ID done..."
 
-Ticket implemented: $TICKET
+sed -i.bak "s/^## $TICKET_ID:/## ${TICKET_ID/TODO/DONE}:/" "$BACKLOG_FILE"
+rm -f "$BACKLOG_FILE.bak"
 
-Model: $MODEL
+git add "$SOURCE_DIR" "$BACKLOG_FILE" build.gradle.kts composeApp/build.gradle.kts settings.gradle.kts 2>/dev/null || true
 
-Checks run:
-- Gradle build
-EOF
+if git diff --cached --quiet; then
+  echo "FAILED: No changes staged."
+  exit 1
+fi
 
-git add -A
-git commit -m "Implement $TICKET"
-git push -u origin "$BRANCH"
+git commit -m "Implement $TICKET_ID"
 
-gh pr create \
-  --base "$BASE_BRANCH" \
-  --head "$BRANCH" \
-  --title "Implement $TICKET" \
-  --body-file AGENT_RESULT.md
+git push -u origin "$BRANCH_NAME"
 
-mark_ticket_done
+if command -v gh >/dev/null 2>&1; then
+  gh pr create \
+    --base main \
+    --head "$BRANCH_NAME" \
+    --title "Implement $TICKET_ID" \
+    --body "Implements $TICKET_ID from $BACKLOG_FILE."
+else
+  echo "gh not found; branch pushed but PR was not created."
+fi
 
-git add "$BACKLOG_FILE"
-git commit -m "Mark $TICKET done"
-git push
-
-record_ticket_done_locally
+echo "Done: $TICKET_ID"
