@@ -81,7 +81,7 @@ Acceptance:
 - App compiles.
 - UI looks more like a basic demo app.
 
-## TODO-007: Add task repository contract
+## DONE-007: Add task repository contract
 
 Introduce a repository abstraction for task data.
 
