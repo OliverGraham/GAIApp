@@ -8,6 +8,11 @@ if [ -z "$TICKET_ID" ]; then
   exit 1
 fi
 
+if [ -z "${GEMINI_API_KEY:-}" ]; then
+  echo "FAILED: GEMINI_API_KEY is not set."
+  exit 1
+fi
+
 BACKLOG_FILE="tickets/backlog.md"
 DONE_TICKETS_FILE=".agent/done-tickets.txt"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
@@ -49,7 +54,7 @@ EOF
 echo "Asking Aider to implement $TICKET_ID..."
 
 python3 -m aider . \
-  --model ollama_chat/qwen3:14b \
+  --model gemini/gemini-2.5-pro \
   --no-restore-chat-history \
   --chat-history-file /tmp/gaiapp-aider.chat.history.md \
   --input-history-file /tmp/gaiapp-aider.input.history \
@@ -81,7 +86,7 @@ EOF
 )"
 
   python3 -m aider . \
-    --model ollama_chat/qwen3:14b \
+    --model gemini/gemini-2.5-pro \
     --no-restore-chat-history \
     --chat-history-file /tmp/gaiapp-aider.chat.history.md \
     --input-history-file /tmp/gaiapp-aider.input.history \
@@ -118,11 +123,18 @@ git commit -m "Implement $TICKET_ID"
 git push -u origin "$BRANCH_NAME"
 
 if command -v gh >/dev/null 2>&1; then
-  gh pr create \
+  PR_URL="$(gh pr create \
     --base main \
     --head "$BRANCH_NAME" \
     --title "Implement $TICKET_ID" \
-    --body "Implements $TICKET_ID from $BACKLOG_FILE."
+    --body "Implements $TICKET_ID from $BACKLOG_FILE.")"
+
+  echo "$PR_URL"
+
+  gh pr merge "$BRANCH_NAME" \
+    --auto \
+    --squash \
+    --delete-branch
 else
   echo "gh not found; branch pushed but PR was not created."
 fi
