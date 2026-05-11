@@ -22,6 +22,8 @@ MAX_FIX_ATTEMPTS=5
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
 BUILD_LOG="/tmp/gaiapp-gradle-build-$TICKET_ID.log"
+TASKS_LOG="/tmp/gaiapp-gradle-tasks-$TICKET_ID.log"
+SPOTLESS_LOG="/tmp/gaiapp-spotless-$TICKET_ID.log"
 
 if [ ! -f "$BACKLOG_FILE" ]; then
   echo "FAILED: $BACKLOG_FILE not found."
@@ -54,6 +56,27 @@ get_aider_files() {
 
 gradle_related_files_changed() {
   git diff --name-only | grep -E '(^gradle/libs\.versions\.toml$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$)' >/dev/null 2>&1
+}
+
+spotless_available() {
+  ./gradlew tasks --all > "$TASKS_LOG" 2>&1
+  grep -q "spotlessApply" "$TASKS_LOG"
+}
+
+run_spotless_if_available() {
+  if spotless_available; then
+    echo "Running Spotless apply..."
+    ./gradlew spotlessApply > "$SPOTLESS_LOG" 2>&1
+    echo "Spotless apply completed."
+    return 0
+  fi
+
+  echo "Spotless task not found. Skipping formatting repair."
+  return 0
+}
+
+build_failure_looks_like_formatting() {
+  grep -Ei 'spotless|ktlint|format|formatting|lint found errors|run.*spotlessApply|spotlessApply' "$BUILD_LOG" >/dev/null 2>&1
 }
 
 run_aider() {
@@ -163,16 +186,27 @@ EOF
     fi
   fi
 
-  if ./gradlew tasks --all | grep -q "spotlessApply"; then
-    echo "Running Spotless..."
-    ./gradlew spotlessApply || true
-  fi
+  run_spotless_if_available
 
   echo "Running Gradle build..."
 
   if ./gradlew build > "$BUILD_LOG" 2>&1; then
     echo "Gradle build passed."
     break
+  fi
+
+  if build_failure_looks_like_formatting; then
+    echo "Build failure appears formatting-related. Running Spotless apply before using Aider..."
+    tail -n 160 "$BUILD_LOG"
+
+    run_spotless_if_available
+
+    echo "Retrying Gradle build after Spotless..."
+
+    if ./gradlew build > "$BUILD_LOG" 2>&1; then
+      echo "Gradle build passed after Spotless."
+      break
+    fi
   fi
 
   FIX_ATTEMPT=$((FIX_ATTEMPT + 1))
@@ -193,6 +227,7 @@ Fix the build by editing repository files directly.
 Do not ask follow-up questions.
 Do not ask me to add files.
 Do not only describe changes.
+Do not manually fix formatting-only errors if Spotless can fix them.
 If imports are missing, add the required imports.
 If an import is unresolved or unused, remove it unless the symbol is actually used and required.
 Do not add speculative imports.
