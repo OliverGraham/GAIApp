@@ -67,7 +67,7 @@ Requirements:
 Acceptance:
 - Empty state appears only when the list is empty.
 
-## TODO-006: Add simple UI polish
+## DONE-006: Add simple UI polish
 
 Improve visual layout.
 
