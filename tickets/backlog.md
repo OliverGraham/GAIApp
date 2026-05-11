@@ -116,7 +116,7 @@ Acceptance:
 - New tasks appear immediately.
 - Completion toggles still update immediately.
 
-## TODO-009: Add task use cases
+## DONE-009: Add task use cases
 
 Introduce simple use cases between UI and repository.
 

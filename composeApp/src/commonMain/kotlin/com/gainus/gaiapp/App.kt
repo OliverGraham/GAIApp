@@ -24,11 +24,26 @@ import gaiapp.composeapp.generated.resources.Res
 import gaiapp.composeapp.generated.resources.compose_multiplatform
 
 import androidx.compose.ui.unit.sp
+import com.gainus.gaiapp.usecases.AddTaskUseCase
+import com.gainus.gaiapp.usecases.DeleteTaskUseCase
+import com.gainus.gaiapp.usecases.ObserveTasksUseCase
+import com.gainus.gaiapp.usecases.ToggleTaskUseCase
+
 
 @Composable
 @Preview
 fun TodoListScreen() {
-    var tasks by remember { mutableStateOf(mutableStateListOf<Task>().apply { addAll(createSampleTasks()) }) }
+    // Initialize repository and use cases
+    val taskRepository = remember { InMemoryTaskRepository() }
+    val observeTasks = remember { ObserveTasksUseCase(taskRepository) }
+    val addTask = remember { AddTaskUseCase(taskRepository, uuidGenerator = { randomUUID() }) }
+    val toggleTask = remember { ToggleTaskUseCase(taskRepository) }
+    val deleteTask = remember { DeleteTaskUseCase(taskRepository) }
+
+    val tasks by observeTasks().collectAsState(initial = emptyList())
+
+    var taskTitle by remember { mutableStateOf("") }
+
     MaterialTheme {
         Column(
             modifier = Modifier
@@ -50,9 +65,6 @@ fun TodoListScreen() {
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                var taskTitle by remember { mutableStateOf("") }
-                var taskIdCounter by remember { mutableStateOf(3) }
-
                 BasicTextField(
                     value = taskTitle,
                     onValueChange = { taskTitle = it },
@@ -60,16 +72,8 @@ fun TodoListScreen() {
                 )
                 Button(
                     onClick = {
-                        if (taskTitle.isNotBlank()) {
-                            val newTask = Task(
-                                id = "new-$taskIdCounter",
-                                title = taskTitle,
-                                isDone = false
-                            )
-                            tasks.add(newTask)
-                            taskIdCounter++
-                            taskTitle = ""
-                        }
+                        addTask(taskTitle)
+                        taskTitle = ""
                     }
                 ) {
                     Text("Add")
@@ -94,7 +98,7 @@ fun TodoListScreen() {
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(tasks) { task ->
+                    items(tasks, key = { it.id }) { task ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -113,7 +117,7 @@ fun TodoListScreen() {
                             ) {
                                 Checkbox(
                                     checked = task.isDone,
-                                    onCheckedChange = { task.isDone = it }
+                                    onCheckedChange = { toggleTask(task) }
                                 )
                                 Text(
                                     text = task.title,
@@ -133,11 +137,4 @@ fun TodoListScreen() {
 @Composable
 fun App() {
     TodoListScreen()
-}
-
-fun createSampleTasks(): List<Task> {
-    return listOf(
-        Task(id = "1", title = "Sample Task 1", isDone = false),
-        Task(id = "2", title = "Sample Task 2", isDone = true)
-    )
 }
