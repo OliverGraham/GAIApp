@@ -1,36 +1,34 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BACKLOG_FILE="${BACKLOG_FILE:-tickets/backlog.md}"
-DONE_FILE="${DONE_FILE:-.agent/done-tickets.txt}"
-MODEL="${MODEL:-qwen3:14b}"
+BACKLOG_FILE="tickets/backlog.md"
+PATCH_SCRIPT="scripts/agent-ticket-patch.sh"
 
-TICKET="$(
-  awk -v done_file="$DONE_FILE" '
-    BEGIN {
-      while ((getline line < done_file) > 0) {
-        done[line] = 1
-      }
-    }
-
-    /^## TODO-[0-9]+:/ {
-      line = $0
-      sub(/^## /, "", line)
-      sub(/:.*/, "", line)
-
-      if (!(line in done)) {
-        print line
-        exit
-      }
-    }
-  ' "$BACKLOG_FILE"
-)"
-
-if [ -z "$TICKET" ]; then
-  echo "FAILED: No open TODO ticket found in $BACKLOG_FILE"
+if [ ! -f "$BACKLOG_FILE" ]; then
+  echo "FAILED: $BACKLOG_FILE not found."
   exit 1
 fi
 
-echo "Running agent for next ticket: $TICKET"
+if [ ! -x "$PATCH_SCRIPT" ]; then
+  echo "FAILED: $PATCH_SCRIPT is not executable."
+  echo "Run: chmod +x $PATCH_SCRIPT"
+  exit 1
+fi
 
-MODEL="$MODEL" BACKLOG_FILE="$BACKLOG_FILE" DONE_FILE="$DONE_FILE" scripts/agent-ticket-patch.sh "$TICKET"
+while true; do
+  TICKET_ID="$(grep -m 1 '^## TODO-[0-9][0-9][0-9]:' "$BACKLOG_FILE" | sed 's/^## \(TODO-[0-9][0-9][0-9]\):.*/\1/')"
+
+  if [ -z "$TICKET_ID" ]; then
+    echo "No TODO tickets left in $BACKLOG_FILE."
+    exit 0
+  fi
+
+  echo "Running agent for next ticket: $TICKET_ID"
+
+  "$PATCH_SCRIPT" "$TICKET_ID"
+
+  echo "Completed $TICKET_ID. Returning to main before checking next ticket..."
+
+  git checkout main
+  git pull origin main
+done
