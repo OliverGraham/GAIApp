@@ -16,7 +16,7 @@ fi
 BACKLOG_FILE="tickets/backlog.md"
 DONE_TICKETS_FILE=".agent/done-tickets.txt"
 MODEL="gemini/gemini-2.5-flash"
-FIX_MODEL="gemini/gemini-2.5-pro"
+FIX_MODEL="gemini/gemini-2.5-flash"
 MAX_IMPLEMENT_ATTEMPTS=3
 MAX_FIX_ATTEMPTS=5
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
