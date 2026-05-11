@@ -131,7 +131,22 @@ Acceptance:
 - Todo UI behavior is unchanged.
 - Task actions flow through use cases.
 
-## TODO-010: Add Todo view model
+## TODO-010: Add Spotless formatting
+
+Add deterministic formatting for Kotlin files.
+
+Requirements:
+- Add Spotless Gradle configuration for Kotlin/Kotlin Gradle files.
+- Configure formatting for `.kt` and `.kts` files.
+- Do not introduce unnecessary style rules.
+- Ensure formatting can be run from the command line.
+
+Acceptance:
+- `./gradlew spotlessApply` runs successfully.
+- `./gradlew spotlessCheck` runs successfully.
+- App still compiles.
+
+## TODO-011: Add Todo view model
 
 Move screen state and actions into a view model.
 
@@ -147,7 +162,7 @@ Acceptance:
 - UI state is not primarily managed inside the composable.
 - Todo screen behavior remains unchanged.
 
-## TODO-011: Add dependency injection setup
+## TODO-012: Add dependency injection setup
 
 Introduce dependency injection for app wiring.
 
@@ -163,7 +178,7 @@ Acceptance:
 - Todo screen receives its dependencies through DI or a DI-backed entry point.
 - App behavior remains unchanged.
 
-## TODO-012: Add Room persistence dependencies
+## TODO-013: Add Room persistence dependencies
 
 Add the persistence foundation using Room where supported.
 
@@ -180,7 +195,7 @@ Acceptance:
 - No unused placeholder implementation files are added.
 - Existing in-memory app behavior still works.
 
-## TODO-013: Add task database schema
+## TODO-014: Add task database schema
 
 Create the database model for persisted tasks.
 
@@ -196,7 +211,7 @@ Acceptance:
 - Database schema exists.
 - Domain model remains independent from Room annotations.
 
-## TODO-014: Add platform database builders
+## TODO-015: Add platform database builders
 
 Wire database creation for supported platforms.
 
@@ -211,7 +226,7 @@ Acceptance:
 - Database can be constructed on supported platforms.
 - Platform-specific code stays in platform source sets.
 
-## TODO-015: Add Room-backed task repository
+## TODO-016: Add Room-backed task repository
 
 Implement persistent task storage.
 
@@ -228,7 +243,7 @@ Acceptance:
 - Tasks persist after app restart on supported platforms.
 - Existing todo UI works without direct database access.
 
-## TODO-016: Add loading and error UI state
+## TODO-017: Add loading and error UI state
 
 Make the UI handle real data-layer states.
 
@@ -244,7 +259,7 @@ Acceptance:
 - UI can represent loading, success, empty, and error states.
 - Data-layer failures do not crash the UI.
 
-## TODO-017: Add delete task UI
+## TODO-018: Add delete task UI
 
 Allow tasks to be removed.
 
@@ -259,7 +274,7 @@ Acceptance:
 - Users can delete tasks.
 - Empty state appears when all tasks are deleted.
 
-## TODO-018: Add basic repository tests
+## TODO-019: Add basic repository tests
 
 Add tests for task repository behavior.
 
@@ -275,7 +290,7 @@ Acceptance:
 - Repository behavior is covered.
 - Tests do not depend on manual app interaction.
 
-## TODO-019: Add use case and view model tests
+## TODO-020: Add use case and view model tests
 
 Add tests for the application layer.
 
@@ -291,7 +306,7 @@ Acceptance:
 - View model/use case behavior is covered.
 - UI logic is less dependent on manual testing.
 
-## TODO-020: Add architecture cleanup pass
+## TODO-021: Add architecture cleanup pass
 
 Clean up package structure and naming.
 
