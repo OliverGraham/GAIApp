@@ -43,7 +43,7 @@ Acceptance:
 - User can add tasks during runtime.
 - No persistence required.
 
-## TODO-004: Add task completion toggle
+## DONE-004: Add task completion toggle
 
 Allow tasks to be marked complete.
 

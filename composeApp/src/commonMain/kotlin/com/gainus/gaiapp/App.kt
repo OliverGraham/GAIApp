@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -21,11 +22,11 @@ import gaiapp.composeapp.generated.resources.Res
 import gaiapp.composeapp.generated.resources.compose_multiplatform
 
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.mutableStateListOf
 
 @Composable
 @Preview
 fun TodoListScreen() {
+    var tasks by remember { mutableStateOf(mutableStateListOf<Task>().apply { addAll(createSampleTasks()) }) }
     MaterialTheme {
         Column(
             modifier = Modifier
@@ -86,13 +87,10 @@ fun TodoListScreen() {
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (task.isDone) {
-                            Image(
-                                painterResource(Res.drawable.compose_multiplatform),
-                                contentDescription = "Checkmark",
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                        Checkbox(
+                            checked = task.isDone,
+                            onCheckedChange = { task.isDone = it }
+                        )
                         Text(
                             text = task.title,
                             modifier = Modifier
@@ -111,7 +109,9 @@ fun App() {
     TodoListScreen()
 }
 
-// Initialize the task list with sample data
-val tasks = mutableStateListOf<Task>().apply {
-    addAll(createSampleTasks())
+fun createSampleTasks(): List<Task> {
+    return listOf(
+        Task(id = "1", title = "Sample Task 1", isDone = false),
+        Task(id = "2", title = "Sample Task 2", isDone = true)
+    )
 }
