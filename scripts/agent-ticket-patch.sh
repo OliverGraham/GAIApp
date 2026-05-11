@@ -9,7 +9,7 @@ if [ -z "$TICKET_ID" ]; then
 fi
 
 BACKLOG_FILE="tickets/backlog.md"
-SOURCE_DIR="composeApp/src/commonMain/kotlin"
+DONE_TICKETS_FILE=".agent/done-tickets.txt"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
 
@@ -23,16 +23,10 @@ if ! grep -q "^## $TICKET_ID:" "$BACKLOG_FILE"; then
   exit 1
 fi
 
-if [ ! -d "$SOURCE_DIR" ]; then
-  echo "FAILED: $SOURCE_DIR not found."
-  exit 1
-fi
-
 echo "Preparing branch for $TICKET_ID..."
 
 git checkout main
 git pull origin main
-
 git checkout -b "$BRANCH_NAME"
 
 AIDER_PROMPT="$(cat <<EOF
@@ -41,8 +35,8 @@ Implement $TICKET_ID from $BACKLOG_FILE.
 Edit the repository directly.
 Do not ask me to add files.
 Do not only describe changes.
-Create, modify, and delete files as needed under $SOURCE_DIR.
-Use the existing app structure and package names.
+Use the whole Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
+Use the existing package name com.gainus.gaiapp.
 Keep the implementation minimal but real.
 Do not mark the ticket done.
 Do not commit changes.
@@ -54,23 +48,17 @@ EOF
 
 echo "Asking Aider to implement $TICKET_ID..."
 
-BEFORE_STATUS="$(git status --porcelain "$SOURCE_DIR" "$BACKLOG_FILE" || true)"
-
-python3 -m aider \
+python3 -m aider . \
   --model ollama_chat/qwen3:14b \
   --no-restore-chat-history \
   --chat-history-file /tmp/gaiapp-aider.chat.history.md \
   --input-history-file /tmp/gaiapp-aider.input.history \
   --yes-always \
   --no-auto-commits \
-  --message "$AIDER_PROMPT" \
-  "$SOURCE_DIR" \
-  "$BACKLOG_FILE"
+  --message "$AIDER_PROMPT"
 
-AFTER_STATUS="$(git status --porcelain "$SOURCE_DIR" "$BACKLOG_FILE" || true)"
-
-if [ "$BEFORE_STATUS" = "$AFTER_STATUS" ]; then
-  echo "FAILED: Aider did not change app source code under $SOURCE_DIR."
+if git diff --quiet && git diff --cached --quiet; then
+  echo "FAILED: Aider did not change project files."
   exit 1
 fi
 
@@ -85,26 +73,21 @@ The Gradle build failed after implementing $TICKET_ID.
 Fix the build by editing the repository directly.
 Do not ask me to add files.
 Do not only describe changes.
-Modify files under $SOURCE_DIR or Gradle files only if needed.
+Use the whole Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, and shared app wiring.
 Do not mark the ticket done.
 Do not commit changes.
 Stop after fixing the build.
 EOF
 )"
 
-  python3 -m aider \
+  python3 -m aider . \
     --model ollama_chat/qwen3:14b \
     --no-restore-chat-history \
     --chat-history-file /tmp/gaiapp-aider.chat.history.md \
     --input-history-file /tmp/gaiapp-aider.input.history \
     --yes-always \
     --no-auto-commits \
-    --message "$FIX_PROMPT" \
-    "$SOURCE_DIR" \
-    "$BACKLOG_FILE" \
-    "build.gradle.kts" \
-    "composeApp/build.gradle.kts" \
-    "settings.gradle.kts"
+    --message "$FIX_PROMPT"
 
   ./gradlew build
 fi
@@ -114,7 +97,16 @@ echo "Marking $TICKET_ID done..."
 sed -i.bak "s/^## $TICKET_ID:/## ${TICKET_ID/TODO/DONE}:/" "$BACKLOG_FILE"
 rm -f "$BACKLOG_FILE.bak"
 
-git add "$SOURCE_DIR" "$BACKLOG_FILE" build.gradle.kts composeApp/build.gradle.kts settings.gradle.kts 2>/dev/null || true
+mkdir -p "$(dirname "$DONE_TICKETS_FILE")"
+touch "$DONE_TICKETS_FILE"
+
+if ! grep -qx "$TICKET_ID" "$DONE_TICKETS_FILE"; then
+  echo "$TICKET_ID" >> "$DONE_TICKETS_FILE"
+fi
+
+git add .
+
+git reset -- .aider* aider.chat.history.md .aider.chat.history.md 2>/dev/null || true
 
 if git diff --cached --quiet; then
   echo "FAILED: No changes staged."
