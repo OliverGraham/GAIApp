@@ -15,6 +15,7 @@ fi
 
 BACKLOG_FILE="tickets/backlog.md"
 DONE_TICKETS_FILE=".agent/done-tickets.txt"
+MODEL="gemini/gemini-2.5-flash"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
 
@@ -51,10 +52,10 @@ The backlog entry to implement is $TICKET_ID.
 EOF
 )"
 
-echo "Asking Aider to implement $TICKET_ID..."
+echo "Asking Aider to implement $TICKET_ID with $MODEL..."
 
 python3 -m aider . \
-  --model gemini/gemini-2.5-pro \
+  --model "$MODEL" \
   --no-restore-chat-history \
   --chat-history-file /tmp/gaiapp-aider.chat.history.md \
   --input-history-file /tmp/gaiapp-aider.input.history \
@@ -86,7 +87,7 @@ EOF
 )"
 
   python3 -m aider . \
-    --model gemini/gemini-2.5-pro \
+    --model "$MODEL" \
     --no-restore-chat-history \
     --chat-history-file /tmp/gaiapp-aider.chat.history.md \
     --input-history-file /tmp/gaiapp-aider.input.history \
