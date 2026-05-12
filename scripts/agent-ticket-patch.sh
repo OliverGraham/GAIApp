@@ -22,6 +22,7 @@ MAX_FIX_ATTEMPTS=5
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
 BUILD_LOG="/tmp/gaiapp-gradle-build-$TICKET_ID.log"
+SYNC_LOG="/tmp/gaiapp-gradle-sync-$TICKET_ID.log"
 TASKS_LOG="/tmp/gaiapp-gradle-tasks-$TICKET_ID.log"
 SPOTLESS_LOG="/tmp/gaiapp-spotless-$TICKET_ID.log"
 
@@ -56,6 +57,19 @@ get_aider_files() {
 
 gradle_related_files_changed() {
   git diff --name-only | grep -E '(^gradle/libs\.versions\.toml$|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$)' >/dev/null 2>&1
+}
+
+run_gradle_sync() {
+  echo "Running Gradle sync/configuration..."
+
+  if ./gradlew tasks > "$SYNC_LOG" 2>&1; then
+    echo "Gradle sync/configuration passed."
+    return 0
+  fi
+
+  echo "Gradle sync/configuration failed."
+  tail -n 160 "$SYNC_LOG"
+  return 1
 }
 
 spotless_available() {
@@ -144,46 +158,48 @@ FIX_ATTEMPT=0
 
 while true; do
   if gradle_related_files_changed; then
-    echo "Gradle-related files changed. Running Gradle configuration check..."
+    echo "Gradle-related files changed. Running Gradle sync before build..."
 
-    if ! ./gradlew tasks > "$BUILD_LOG" 2>&1; then
+    if ! run_gradle_sync; then
       FIX_ATTEMPT=$((FIX_ATTEMPT + 1))
 
-      echo "Gradle configuration failed. Fix attempt $FIX_ATTEMPT of $MAX_FIX_ATTEMPTS."
-      tail -n 160 "$BUILD_LOG"
+      echo "Gradle sync failed. Aider fix attempt $FIX_ATTEMPT of $MAX_FIX_ATTEMPTS."
 
       if [ "$FIX_ATTEMPT" -gt "$MAX_FIX_ATTEMPTS" ]; then
-        echo "FAILED: Gradle configuration still fails after $MAX_FIX_ATTEMPTS fix attempts."
-        echo "Build log: $BUILD_LOG"
+        echo "FAILED: Gradle sync still fails after $MAX_FIX_ATTEMPTS fix attempts."
+        echo "Sync log: $SYNC_LOG"
         exit 1
       fi
 
       FIX_PROMPT="$(cat <<EOF
-The Gradle configuration failed after implementing $TICKET_ID.
+The Gradle sync/configuration step failed after implementing $TICKET_ID.
 
-Fix the Gradle files by editing repository files directly.
+Fix the Gradle configuration by editing repository files directly.
 Do not ask follow-up questions.
 Do not ask me to add files.
 Do not only describe changes.
 If a version catalog entry is wrong, fix gradle/libs.versions.toml.
 If a plugin alias is wrong, fix the plugin declaration.
 If a dependency alias is wrong, fix the dependency declaration.
+If a dependency version is invalid or unavailable, choose a valid compatible version.
 If a plugin or dependency is unnecessary, remove it.
 Keep the Kotlin Multiplatform project valid.
 Do not mark the ticket done.
 Do not update $DONE_TICKETS_FILE.
 Do not commit changes.
-Stop after fixing the Gradle configuration.
+Stop after fixing Gradle sync/configuration.
 
-Recent Gradle failure output:
+Recent Gradle sync failure output:
 
-$(tail -n 180 "$BUILD_LOG")
+$(tail -n 180 "$SYNC_LOG")
 EOF
 )"
 
       run_aider "$FIX_PROMPT" "$FIX_MODEL" || true
       continue
     fi
+  else
+    echo "No Gradle-related file changes detected. Skipping Gradle sync step."
   fi
 
   run_spotless_if_available
@@ -211,7 +227,7 @@ EOF
 
   FIX_ATTEMPT=$((FIX_ATTEMPT + 1))
 
-  echo "Gradle build failed. Fix attempt $FIX_ATTEMPT of $MAX_FIX_ATTEMPTS."
+  echo "Gradle build failed. Aider fix attempt $FIX_ATTEMPT of $MAX_FIX_ATTEMPTS."
   tail -n 160 "$BUILD_LOG"
 
   if [ "$FIX_ATTEMPT" -gt "$MAX_FIX_ATTEMPTS" ]; then
@@ -235,6 +251,7 @@ Do not import symbols that are not already available in the project dependencies
 If symbols are unresolved, inspect the existing project structure and correct the references.
 If package names are wrong, use com.gainus.gaiapp.
 If Gradle files or version catalog entries are wrong, fix them.
+If a dependency version is invalid or unavailable, choose a valid compatible version.
 If a dependency is unnecessary, remove it.
 If there is ambiguity, make the best reasonable implementation choice and edit files.
 Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, version catalogs, and shared app wiring.
@@ -243,7 +260,7 @@ Do not update $DONE_TICKETS_FILE.
 Do not commit changes.
 Stop after fixing the build.
 
-Recent Gradle failure output:
+Recent Gradle build failure output:
 
 $(tail -n 180 "$BUILD_LOG")
 EOF
