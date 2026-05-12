@@ -5,7 +5,5 @@ import com.gainus.gaiapp.TaskRepository
 import kotlinx.coroutines.flow.Flow
 
 class ObserveTasksUseCase(private val taskRepository: TaskRepository) {
-    operator fun invoke(): Flow<List<Task>> {
-        return taskRepository.getTasks()
-    }
+    operator fun invoke(): Flow<List<Task>> = taskRepository.getTasks()
 }
