@@ -131,7 +131,7 @@ Acceptance:
 - Todo UI behavior is unchanged.
 - Task actions flow through use cases.
 
-## TODO-010: Add Spotless formatting
+## DONE-010: Add Spotless formatting
 
 Add deterministic formatting for Kotlin files.
 
