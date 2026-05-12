@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TICKET_ID="${1:-}"
+BACKLOG_FILE="tickets/backlog.md"
+DONE_TICKETS_FILE=".agent/done-tickets.txt"
+MODEL="gemini/gemini-2.5-flash"
+
+if [ ! -f "$BACKLOG_FILE" ]; then
+  echo "FAILED: $BACKLOG_FILE not found."
+  exit 1
+fi
+
+TICKET_ID="$(grep -m 1 '^## TODO-[0-9][0-9][0-9]:' "$BACKLOG_FILE" | sed 's/^## \(TODO-[0-9][0-9][0-9]\):.*/\1/')"
 
 if [ -z "$TICKET_ID" ]; then
-  echo "Usage: scripts/agent-ticket-patch.sh TODO-XXX"
-  exit 1
+  echo "No TODO tickets left in $BACKLOG_FILE."
+  exit 0
 fi
 
 if [ -z "${GEMINI_API_KEY:-}" ]; then
@@ -13,33 +22,33 @@ if [ -z "${GEMINI_API_KEY:-}" ]; then
   exit 1
 fi
 
-BACKLOG_FILE="tickets/backlog.md"
-DONE_TICKETS_FILE=".agent/done-tickets.txt"
-MODEL="gemini/gemini-2.5-flash"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH_NAME="agent/$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')-$TIMESTAMP"
+
+AIDER_LOG="/tmp/gaiapp-aider-$TICKET_ID.log"
 BUILD_LOG="/tmp/gaiapp-gradle-build-$TICKET_ID.log"
-TASKS_LOG="/tmp/gaiapp-gradle-tasks-$TICKET_ID.log"
 SPOTLESS_LOG="/tmp/gaiapp-spotless-$TICKET_ID.log"
-
-if [ ! -f "$BACKLOG_FILE" ]; then
-  echo "FAILED: $BACKLOG_FILE not found."
-  exit 1
-fi
-
-if ! grep -q "^## $TICKET_ID:" "$BACKLOG_FILE"; then
-  echo "FAILED: $TICKET_ID not found in $BACKLOG_FILE."
-  exit 1
-fi
 
 echo "Preparing branch for $TICKET_ID..."
 
 git checkout main
-git pull origin main
+git pull --ff-only origin main
 git checkout -b "$BRANCH_NAME"
 
 mkdir -p "$(dirname "$DONE_TICKETS_FILE")"
 touch "$DONE_TICKETS_FILE"
+
+if [ ! -f .gitignore ]; then
+  touch .gitignore
+fi
+
+if ! grep -qxF ".aider*" .gitignore; then
+  echo ".aider*" >> .gitignore
+fi
+
+if ! grep -qxF "aider.chat.history.md" .gitignore; then
+  echo "aider.chat.history.md" >> .gitignore
+fi
 
 get_aider_files() {
   git ls-files \
@@ -48,54 +57,29 @@ get_aider_files() {
     "*.toml" \
     "gradle.properties" \
     "$BACKLOG_FILE" \
-    "$DONE_TICKETS_FILE"
+    "$DONE_TICKETS_FILE" \
+    ".gitignore"
 }
 
-spotless_available() {
-  ./gradlew tasks --all > "$TASKS_LOG" 2>&1
-  grep -q "spotlessApply" "$TASKS_LOG"
+rate_limit_seen() {
+  grep -Ei 'RateLimitError|RESOURCE_EXHAUSTED|quota|rate limited|GenerateRequestsPerDay|GenerateRequestsPerMinute|requests per minute|requests per day' "$AIDER_LOG" >/dev/null 2>&1
 }
 
-run_spotless_if_available() {
-  if spotless_available; then
-    echo "Running Spotless apply..."
-    ./gradlew spotlessApply > "$SPOTLESS_LOG" 2>&1
-    echo "Spotless apply completed."
-  else
-    echo "Spotless task not found. Skipping formatting repair."
-  fi
-}
+AIDER_FILES="$(get_aider_files)"
 
-run_aider() {
-  PROMPT="$1"
-  AIDER_FILES="$(get_aider_files)"
-
-  if [ -z "$AIDER_FILES" ]; then
-    echo "FAILED: No editable project files found for Aider."
-    exit 1
-  fi
-
-  python3 -m aider $AIDER_FILES \
-    --model "$MODEL" \
-    --edit-format diff \
-    --no-restore-chat-history \
-    --chat-history-file /tmp/gaiapp-aider.chat.history.md \
-    --input-history-file /tmp/gaiapp-aider.input.history \
-    --yes-always \
-    --no-auto-commits \
-    --message "$PROMPT"
-}
-
-echo "Asking Aider to implement $TICKET_ID with $MODEL..."
+if [ -z "$AIDER_FILES" ]; then
+  echo "FAILED: No editable project files found for Aider."
+  exit 1
+fi
 
 AIDER_PROMPT="$(cat <<EOF
 Implement $TICKET_ID from $BACKLOG_FILE.
 
-Edit the repository files directly.
+Edit repository files directly.
 Do not ask follow-up questions.
 Do not ask me to add files.
 Do not only describe changes.
-If there is ambiguity, make the best reasonable implementation choice and edit files.
+Make the best reasonable implementation choice if there is ambiguity.
 Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, version catalogs, and shared app wiring.
 Use the existing package name com.gainus.gaiapp.
 Keep the implementation minimal but real.
@@ -108,16 +92,59 @@ The backlog entry to implement is $TICKET_ID.
 EOF
 )"
 
-run_aider "$AIDER_PROMPT" || true
+echo "Running Aider once for $TICKET_ID with $MODEL..."
+rm -f "$AIDER_LOG"
 
-if git diff --quiet && git diff --cached --quiet; then
-  echo "FAILED: Aider did not change project files."
+set +e
+python3 -m aider $AIDER_FILES \
+  --model "$MODEL" \
+  --edit-format diff \
+  --no-restore-chat-history \
+  --chat-history-file /tmp/gaiapp-aider.chat.history.md \
+  --input-history-file /tmp/gaiapp-aider.input.history \
+  --yes-always \
+  --no-auto-commits \
+  --message "$AIDER_PROMPT" 2>&1 | tee "$AIDER_LOG"
+AIDER_STATUS="${PIPESTATUS[0]}"
+set -e
+
+if rate_limit_seen; then
+  echo "FAILED: Aider hit a Gemini quota/rate limit."
+  echo "Aider log: $AIDER_LOG"
   exit 1
 fi
 
-run_spotless_if_available
+if [ "$AIDER_STATUS" -ne 0 ]; then
+  echo "FAILED: Aider exited with status $AIDER_STATUS."
+  echo "Aider log: $AIDER_LOG"
+  exit 1
+fi
 
-echo "Running Gradle build..."
+if git diff --quiet && git diff --cached --quiet; then
+  echo "FAILED: Aider did not change project files."
+  echo "Aider log: $AIDER_LOG"
+  exit 1
+fi
+
+echo "Running Spotless apply if available..."
+
+set +e
+./gradlew spotlessApply > "$SPOTLESS_LOG" 2>&1
+SPOTLESS_STATUS="$?"
+set -e
+
+if [ "$SPOTLESS_STATUS" -eq 0 ]; then
+  echo "Spotless apply completed."
+elif grep -Ei "Task 'spotlessApply' not found|Task \"spotlessApply\" not found|Cannot locate tasks that match 'spotlessApply'|task .*spotlessApply.* not found" "$SPOTLESS_LOG" >/dev/null 2>&1; then
+  echo "Spotless task not found. Skipping formatting repair."
+else
+  echo "FAILED: Spotless apply failed."
+  echo "Spotless log: $SPOTLESS_LOG"
+  tail -n 200 "$SPOTLESS_LOG"
+  exit 1
+fi
+
+echo "Running Gradle build once..."
 
 if ! ./gradlew build > "$BUILD_LOG" 2>&1; then
   echo "FAILED: Gradle build failed."
