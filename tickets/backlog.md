@@ -195,11 +195,12 @@ Acceptance:
 - No unused placeholder implementation files are added.
 - Existing in-memory app behavior still works.
 
-## TODO-014: Add task database schema
+## DONE-014: Add task database schema
 
 Create the database model for persisted tasks.
 
 Requirements:
+- Inspect KMP Room documentation before implementation: https://developer.android.com/kotlin/multiplatform/room
 - Add a Room `TaskEntity`.
 - Add a Room DAO for reading, inserting, updating, and deleting tasks.
 - Add a Room database class.
@@ -216,6 +217,7 @@ Acceptance:
 Wire database creation for supported platforms.
 
 Requirements:
+- Inspect KMP Room documentation before implementation: https://developer.android.com/kotlin/multiplatform/room
 - Add Android database builder code.
 - Add desktop database builder code if the current app supports desktop.
 - Keep platform-specific database construction out of common UI code.
@@ -231,6 +233,7 @@ Acceptance:
 Implement persistent task storage.
 
 Requirements:
+- Inspect KMP Room documentation before implementation: https://developer.android.com/kotlin/multiplatform/room
 - Add a `RoomTaskRepository` implementation.
 - Repository should read tasks from the DAO.
 - Repository should add tasks to the database.
