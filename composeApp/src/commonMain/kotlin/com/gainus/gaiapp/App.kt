@@ -24,25 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.gainus.gaiapp.usecases.AddTaskUseCase
-import com.gainus.gaiapp.usecases.DeleteTaskUseCase
-import com.gainus.gaiapp.usecases.ObserveTasksUseCase
-import com.gainus.gaiapp.usecases.ToggleTaskUseCase
 import com.gainus.gaiapp.viewmodel.TodoViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun TodoListScreen(
-    viewModel: TodoViewModel = viewModel {
-        val taskRepository = InMemoryTaskRepository()
-        TodoViewModel(
-            observeTasks = ObserveTasksUseCase(taskRepository),
-            addTask = AddTaskUseCase(taskRepository, uuidGenerator = { randomUUID() }),
-            toggleTask = ToggleTaskUseCase(taskRepository),
-            deleteTask = DeleteTaskUseCase(taskRepository),
-        )
-    }
-) {
+fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     MaterialTheme {
