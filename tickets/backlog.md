@@ -146,7 +146,7 @@ Acceptance:
 - `./gradlew spotlessCheck` runs successfully.
 - App still compiles.
 
-## TODO-011: Add Todo view model
+## DONE-011: Add Todo view model
 
 Move screen state and actions into a view model.
 
