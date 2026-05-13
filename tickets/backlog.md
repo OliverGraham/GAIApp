@@ -162,7 +162,7 @@ Acceptance:
 - UI state is not primarily managed inside the composable.
 - Todo screen behavior remains unchanged.
 
-## TODO-012: Add dependency injection setup
+## DONE-012: Add dependency injection setup
 
 Introduce dependency injection for app wiring.
 
