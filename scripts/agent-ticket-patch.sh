@@ -81,6 +81,8 @@ Do not ask me to add files.
 Do not only describe changes.
 Make the best reasonable implementation choice if there is ambiguity.
 Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, version catalogs, and shared app wiring.
+If you need to use icons in any UI, draw them yourself, do not try to import icons.
+If you make a @Preview for a @Composable function, use import androidx.compose.ui.tooling.preview.Preview
 Use the existing package name com.gainus.gaiapp.
 Keep the implementation minimal but real.
 Do not mark the ticket done.

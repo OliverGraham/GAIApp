@@ -20,32 +20,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gainus.gaiapp.usecases.AddTaskUseCase
 import com.gainus.gaiapp.usecases.DeleteTaskUseCase
 import com.gainus.gaiapp.usecases.ObserveTasksUseCase
 import com.gainus.gaiapp.usecases.ToggleTaskUseCase
+import com.gainus.gaiapp.viewmodel.TodoViewModel
 
 @Composable
-@Preview
-fun TodoListScreen() {
-    // Initialize repository and use cases
-    val taskRepository = remember { InMemoryTaskRepository() }
-    val observeTasks = remember { ObserveTasksUseCase(taskRepository) }
-    val addTask = remember { AddTaskUseCase(taskRepository, uuidGenerator = { randomUUID() }) }
-    val toggleTask = remember { ToggleTaskUseCase(taskRepository) }
-    val deleteTask = remember { DeleteTaskUseCase(taskRepository) }
-
-    val tasks by observeTasks().collectAsState(initial = emptyList())
-
-    var taskTitle by remember { mutableStateOf("") }
+fun TodoListScreen(
+    viewModel: TodoViewModel = viewModel {
+        val taskRepository = InMemoryTaskRepository()
+        TodoViewModel(
+            observeTasks = ObserveTasksUseCase(taskRepository),
+            addTask = AddTaskUseCase(taskRepository, uuidGenerator = { randomUUID() }),
+            toggleTask = ToggleTaskUseCase(taskRepository),
+            deleteTask = DeleteTaskUseCase(taskRepository),
+        )
+    }
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
     MaterialTheme {
         Column(
@@ -61,28 +59,27 @@ fun TodoListScreen() {
                 modifier = Modifier.fillMaxWidth(),
             )
 
+            Text(
+                text = "Total tasks: ${uiState.tasks.size}",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            )
+
             // Input field and Add button
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 BasicTextField(
-                    value = taskTitle,
-                    onValueChange = { taskTitle = it },
+                    value = uiState.taskTitle,
+                    onValueChange = { viewModel.onTaskTitleChange(it) },
                     modifier = Modifier.weight(1f),
                 )
-                Button(
-                    onClick = {
-                        addTask(taskTitle)
-                        taskTitle = ""
-                    }
-                ) {
-                    Text("Add")
-                }
+                Button(onClick = { viewModel.addTask() }) { Text("Add") }
             }
 
             // Task list
-            if (tasks.isEmpty()) {
+            if (uiState.tasks.isEmpty()) {
                 Text(
                     text = "No tasks yet",
                     modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
@@ -94,7 +91,7 @@ fun TodoListScreen() {
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(tasks, key = { it.id }) { task ->
+                    items(uiState.tasks, key = { it.id }) { task ->
                         Card(
                             modifier =
                                 Modifier.fillMaxWidth()
@@ -112,7 +109,7 @@ fun TodoListScreen() {
                             ) {
                                 Checkbox(
                                     checked = task.isDone,
-                                    onCheckedChange = { toggleTask(task) },
+                                    onCheckedChange = { viewModel.toggleTask(task) },
                                 )
                                 Text(
                                     text = task.title,
