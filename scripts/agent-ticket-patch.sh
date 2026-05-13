@@ -83,6 +83,9 @@ Make the best reasonable implementation choice if there is ambiguity.
 Use the Kotlin Multiplatform project as needed, including commonMain, androidMain, iosMain, Gradle files, version catalogs, and shared app wiring.
 If you need to use icons in any UI, draw them yourself, do not try to import icons.
 If you make a @Preview for a @Composable function, use import androidx.compose.ui.tooling.preview.Preview
+Do not change versions in versions.toml if they are working. Do not change the Room version for example.
+Do not touch or replace versions in build.gradle.kts nor in libs.versions.toml.
+Do not add any new versions or linbraries for sql for iOS. For everything related to Room, it is working perfectly and you should not change anything related to Room for toml versions or in build.gradle.kts
 Use the existing package name com.gainus.gaiapp.
 Keep the implementation minimal but real.
 Do not mark the ticket done.

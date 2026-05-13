@@ -178,7 +178,7 @@ Acceptance:
 - Todo screen receives its dependencies through DI or a DI-backed entry point.
 - App behavior remains unchanged.
 
-## TODO-013: Add Room persistence dependencies
+## DONE-013: Add Room persistence dependencies
 
 Add the persistence foundation using Room where supported.
 
