@@ -1,3 +1,3 @@
-package com.gainus.gaiapp
+package com.gainus.gaiapp.util
 
 expect fun randomUUID(): String

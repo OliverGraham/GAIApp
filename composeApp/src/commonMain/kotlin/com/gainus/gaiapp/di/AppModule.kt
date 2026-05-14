@@ -1,15 +1,15 @@
 package com.gainus.gaiapp.di
 
-import com.gainus.gaiapp.RoomTaskRepository
-import com.gainus.gaiapp.TaskRepository
-import com.gainus.gaiapp.database.AppDatabase
-import com.gainus.gaiapp.database.provideDatabase
-import com.gainus.gaiapp.randomUUID
-import com.gainus.gaiapp.usecases.AddTaskUseCase
-import com.gainus.gaiapp.usecases.DeleteTaskUseCase
-import com.gainus.gaiapp.usecases.ObserveTasksUseCase
-import com.gainus.gaiapp.usecases.ToggleTaskUseCase
-import com.gainus.gaiapp.viewmodel.TodoViewModel
+import com.gainus.gaiapp.data.local.database.AppDatabase
+import com.gainus.gaiapp.data.local.database.provideDatabase
+import com.gainus.gaiapp.data.local.repository.RoomTaskRepository
+import com.gainus.gaiapp.domain.repository.TaskRepository
+import com.gainus.gaiapp.domain.usecase.AddTaskUseCase
+import com.gainus.gaiapp.domain.usecase.DeleteTaskUseCase
+import com.gainus.gaiapp.domain.usecase.ObserveTasksUseCase
+import com.gainus.gaiapp.domain.usecase.ToggleTaskUseCase
+import com.gainus.gaiapp.presentation.viewmodel.TodoViewModel
+import com.gainus.gaiapp.util.randomUUID
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf

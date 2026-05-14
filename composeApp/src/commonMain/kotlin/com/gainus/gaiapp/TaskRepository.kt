@@ -1,5 +1,6 @@
-package com.gainus.gaiapp
+package com.gainus.gaiapp.domain.repository
 
+import com.gainus.gaiapp.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 
 interface TaskRepository {

@@ -1,7 +1,7 @@
 package com.gainus.gaiapp
 
-import com.gainus.gaiapp.database.TaskDao
-import com.gainus.gaiapp.database.TaskEntity
+import com.gainus.gaiapp.data.local.database.TaskDao
+import com.gainus.gaiapp.data.local.database.TaskEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map

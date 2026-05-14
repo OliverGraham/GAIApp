@@ -1,10 +1,11 @@
 package com.gainus.gaiapp
 
-import com.gainus.gaiapp.usecases.AddTaskUseCase
-import com.gainus.gaiapp.usecases.DeleteTaskUseCase
-import com.gainus.gaiapp.usecases.ObserveTasksUseCase
-import com.gainus.gaiapp.usecases.ToggleTaskUseCase
-import com.gainus.gaiapp.viewmodel.TodoViewModel
+import com.gainus.gaiapp.domain.model.Task
+import com.gainus.gaiapp.domain.usecase.AddTaskUseCase
+import com.gainus.gaiapp.domain.usecase.DeleteTaskUseCase
+import com.gainus.gaiapp.domain.usecase.ObserveTasksUseCase
+import com.gainus.gaiapp.domain.usecase.ToggleTaskUseCase
+import com.gainus.gaiapp.presentation.viewmodel.TodoViewModel
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
