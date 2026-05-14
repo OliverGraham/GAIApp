@@ -262,7 +262,7 @@ Acceptance:
 - UI can represent loading, success, empty, and error states.
 - Data-layer failures do not crash the UI.
 
-## TODO-018: Add delete task UI
+## DONE-018: Add delete task UI
 
 Allow tasks to be removed.
 
