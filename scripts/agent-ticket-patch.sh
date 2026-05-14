@@ -88,6 +88,31 @@ Do not touch or replace versions in build.gradle.kts nor in libs.versions.toml.
 Do not add any new versions or libraries for sql for iOS. For everything related to Room, it is working perfectly and you should not change anything related to Room for toml versions or in build.gradle.kts.
 Use the existing package name com.gainus.gaiapp.
 If something has @Suppress("NO_ACTUAL_FOR_EXPECT"), do not implement an actual implementation for it.
+For Kotlin Multiplatform projects using AndroidX Room KMP 2.7+:
+
+Do not manually implement `actual` declarations for the Room database constructor.
+
+Room KSP compiler generates the `actual object` for the database constructor when the database uses:
+
+@ConstructedBy(AppDatabaseConstructor::class)
+
+and common code declares:
+
+@Suppress("KotlinNoActualForExpect")
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
+}
+
+The `expect object` belongs in commonMain. Do not create matching `actual object AppDatabaseConstructor` implementations in androidMain, iosMain, or other platform source sets.
+
+Platform-specific code may still be needed for the database builder, paths, context, drivers, or DI wiring, but not for the RoomDatabaseConstructor actual implementation.
+
+If a build warning appears for the missing actual constructor, keep the suppression:
+
+@Suppress("KotlinNoActualForExpect")
+
+because Room generates the actual implementation during compilation.
+
 Keep the implementation minimal but real.
 Do not mark the ticket done.
 Do not update $DONE_TICKETS_FILE.
