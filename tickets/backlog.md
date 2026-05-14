@@ -277,7 +277,7 @@ Acceptance:
 - Users can delete tasks.
 - Empty state appears when all tasks are deleted.
 
-## TODO-019: Add basic repository tests
+## DONE-019: Add basic repository tests
 
 Add tests for task repository behavior.
 
