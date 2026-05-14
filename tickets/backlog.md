@@ -319,6 +319,7 @@ Requirements:
 - Keep UI code free from direct database access.
 - Remove obsolete sample-only wiring if it is no longer used.
 - Keep existing behavior intact.
+- If everything is correct as-is, then mark this ticket as complete
 
 Acceptance:
 - App compiles.
