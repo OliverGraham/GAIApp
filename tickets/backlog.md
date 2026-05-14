@@ -293,7 +293,7 @@ Acceptance:
 - Repository behavior is covered.
 - Tests do not depend on manual app interaction.
 
-## TODO-020: Add use case and view model tests
+## DONE-020: Add use case and view model tests
 
 Add tests for the application layer.
 
