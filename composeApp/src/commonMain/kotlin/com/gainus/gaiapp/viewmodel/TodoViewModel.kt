@@ -1,12 +1,12 @@
-package com.gainus.gaiapp.viewmodel
+package com.gainus.gaiapp.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gainus.gaiapp.Task
-import com.gainus.gaiapp.usecases.AddTaskUseCase
-import com.gainus.gaiapp.usecases.DeleteTaskUseCase
-import com.gainus.gaiapp.usecases.ObserveTasksUseCase
-import com.gainus.gaiapp.usecases.ToggleTaskUseCase
+import com.gainus.gaiapp.domain.model.Task
+import com.gainus.gaiapp.domain.usecase.AddTaskUseCase
+import com.gainus.gaiapp.domain.usecase.DeleteTaskUseCase
+import com.gainus.gaiapp.domain.usecase.ObserveTasksUseCase
+import com.gainus.gaiapp.domain.usecase.ToggleTaskUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

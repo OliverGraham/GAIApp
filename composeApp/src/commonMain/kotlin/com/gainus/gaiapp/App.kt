@@ -1,4 +1,4 @@
-package com.gainus.gaiapp
+package com.gainus.gaiapp.presentation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,8 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gainus.gaiapp.viewmodel.TodoUiState
-import com.gainus.gaiapp.viewmodel.TodoViewModel
+import com.gainus.gaiapp.domain.model.Task
+import com.gainus.gaiapp.presentation.viewmodel.TodoUiState
+import com.gainus.gaiapp.presentation.viewmodel.TodoViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

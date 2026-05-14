@@ -309,7 +309,7 @@ Acceptance:
 - View model/use case behavior is covered.
 - UI logic is less dependent on manual testing.
 
-## TODO-021: Add architecture cleanup pass
+## DONE-021: Add architecture cleanup pass
 
 Clean up package structure and naming.
 
