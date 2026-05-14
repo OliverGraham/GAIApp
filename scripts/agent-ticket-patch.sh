@@ -85,13 +85,13 @@ If you need to use icons in any UI, draw them yourself, do not try to import ico
 If you make a @Preview for a @Composable function, use import androidx.compose.ui.tooling.preview.Preview
 Do not change versions in versions.toml if they are working. Do not change the Room version for example.
 Do not touch or replace versions in build.gradle.kts nor in libs.versions.toml.
-Do not add any new versions or linbraries for sql for iOS. For everything related to Room, it is working perfectly and you should not change anything related to Room for toml versions or in build.gradle.kts
+Do not add any new versions or libraries for sql for iOS. For everything related to Room, it is working perfectly and you should not change anything related to Room for toml versions or in build.gradle.kts.
 Use the existing package name com.gainus.gaiapp.
+If something has @Suppress("NO_ACTUAL_FOR_EXPECT"), do not implement an actual implementation for it.
 Keep the implementation minimal but real.
 Do not mark the ticket done.
 Do not update $DONE_TICKETS_FILE.
 Do not commit changes.
-Stop after code changes.
 
 The backlog entry to implement is $TICKET_ID.
 EOF
