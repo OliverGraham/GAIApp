@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 data class TodoUiState(
     val tasks: List<Task> = emptyList(),
     val taskTitle: String = "",
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val errorMessage: String? = null,
 )
 
@@ -52,9 +52,12 @@ class TodoViewModel(
     }
 
     fun addTask() {
+        val title = _uiState.value.taskTitle
+        if (title.isBlank()) return
+
         viewModelScope.launch {
             try {
-                addTask.invoke(_uiState.value.taskTitle)
+                addTask.invoke(title)
                 _uiState.update { it.copy(taskTitle = "", errorMessage = null) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = "Failed to add task") }
