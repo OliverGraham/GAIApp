@@ -46,12 +46,12 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
 
             implementation(libs.room.runtime)
+            implementation(libs.sqlite.bundled)
         }
 
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-            implementation(libs.sqlite.bundled)
         }
 
         commonTest.dependencies {

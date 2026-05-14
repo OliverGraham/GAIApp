@@ -228,7 +228,7 @@ Acceptance:
 - Database can be constructed on supported platforms.
 - Platform-specific code stays in platform source sets.
 
-## TODO-016: Add Room-backed task repository
+## DONE-016: Add Room-backed task repository
 
 Implement persistent task storage.
 
@@ -246,7 +246,7 @@ Acceptance:
 - Tasks persist after app restart on supported platforms.
 - Existing todo UI works without direct database access.
 
-## TODO-017: Add loading and error UI state
+## DONE-017: Add loading and error UI state
 
 Make the UI handle real data-layer states.
 

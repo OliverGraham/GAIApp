@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,15 +23,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.gainus.gaiapp.viewmodel.TodoUiState
 import com.gainus.gaiapp.viewmodel.TodoViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
-    val uiState by viewModel.uiState.collectAsState()
-
+fun TodoListScreen(
+    uiState: TodoUiState,
+    onTaskTitleChange: (String) -> Unit,
+    onAddTask: () -> Unit,
+    onToggleTask: (Task) -> Unit,
+) {
     MaterialTheme {
         Column(
             modifier =
@@ -51,6 +57,14 @@ fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
 
+            if (uiState.errorMessage != null) {
+                Text(
+                    text = uiState.errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                )
+            }
+
             // Input field and Add button
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -58,14 +72,22 @@ fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
             ) {
                 BasicTextField(
                     value = uiState.taskTitle,
-                    onValueChange = { viewModel.onTaskTitleChange(it) },
+                    onValueChange = { onTaskTitleChange(it) },
                     modifier = Modifier.weight(1f),
                 )
-                Button(onClick = { viewModel.addTask() }) { Text("Add") }
+                Button(onClick = { onAddTask() }) { Text("Add") }
             }
 
             // Task list
-            if (uiState.tasks.isEmpty()) {
+            if (uiState.isLoading) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.tasks.isEmpty()) {
                 Text(
                     text = "No tasks yet",
                     modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
@@ -95,7 +117,7 @@ fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
                             ) {
                                 Checkbox(
                                     checked = task.isDone,
-                                    onCheckedChange = { viewModel.toggleTask(task) },
+                                    onCheckedChange = { onToggleTask(task) },
                                 )
                                 Text(
                                     text = task.title,
@@ -108,6 +130,39 @@ fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
             }
         }
     }
+}
+
+@Composable
+fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    TodoListScreen(
+        uiState = uiState,
+        onTaskTitleChange = viewModel::onTaskTitleChange,
+        onAddTask = viewModel::addTask,
+        onToggleTask = viewModel::toggleTask,
+    )
+}
+
+@Preview
+@Composable
+fun TodoListScreenLoadingPreview() {
+    TodoListScreen(
+        uiState = TodoUiState(isLoading = true),
+        onTaskTitleChange = {},
+        onAddTask = {},
+        onToggleTask = {},
+    )
+}
+
+@Preview
+@Composable
+fun TodoListScreenErrorPreview() {
+    TodoListScreen(
+        uiState = TodoUiState(errorMessage = "Failed to load tasks"),
+        onTaskTitleChange = {},
+        onAddTask = {},
+        onToggleTask = {},
+    )
 }
 
 @Composable
