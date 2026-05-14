@@ -13,7 +13,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class TodoUiState(val tasks: List<Task> = emptyList(), val taskTitle: String = "")
+data class TodoUiState(
+    val tasks: List<Task> = emptyList(),
+    val taskTitle: String = "",
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+)
 
 class TodoViewModel(
     private val observeTasks: ObserveTasksUseCase,
@@ -27,7 +32,18 @@ class TodoViewModel(
 
     init {
         viewModelScope.launch {
-            observeTasks().collect { tasks -> _uiState.update { it.copy(tasks = tasks) } }
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                observeTasks().collect { tasks ->
+                    _uiState.update {
+                        it.copy(tasks = tasks, isLoading = false, errorMessage = null)
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, errorMessage = "Failed to load tasks")
+                }
+            }
         }
     }
 
@@ -37,16 +53,34 @@ class TodoViewModel(
 
     fun addTask() {
         viewModelScope.launch {
-            addTask.invoke(_uiState.value.taskTitle)
-            _uiState.update { it.copy(taskTitle = "") }
+            try {
+                addTask.invoke(_uiState.value.taskTitle)
+                _uiState.update { it.copy(taskTitle = "", errorMessage = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Failed to add task") }
+            }
         }
     }
 
     fun toggleTask(task: Task) {
-        viewModelScope.launch { toggleTask.invoke(task) }
+        viewModelScope.launch {
+            try {
+                toggleTask.invoke(task)
+                _uiState.update { it.copy(errorMessage = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Failed to toggle task") }
+            }
+        }
     }
 
     fun deleteTask(task: Task) {
-        viewModelScope.launch { deleteTask.invoke(task) }
+        viewModelScope.launch {
+            try {
+                deleteTask.invoke(task)
+                _uiState.update { it.copy(errorMessage = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Failed to delete task") }
+            }
+        }
     }
 }
