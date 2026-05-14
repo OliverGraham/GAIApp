@@ -212,7 +212,7 @@ Acceptance:
 - Database schema exists.
 - Domain model remains independent from Room annotations.
 
-## TODO-015: Add platform database builders
+## DONE-015: Add platform database builders
 
 Wire database creation for supported platforms.
 

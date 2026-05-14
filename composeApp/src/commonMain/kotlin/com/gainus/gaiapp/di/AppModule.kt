@@ -2,6 +2,7 @@ package com.gainus.gaiapp.di
 
 import com.gainus.gaiapp.InMemoryTaskRepository
 import com.gainus.gaiapp.TaskRepository
+import com.gainus.gaiapp.database.AppDatabase
 import com.gainus.gaiapp.randomUUID
 import com.gainus.gaiapp.usecases.AddTaskUseCase
 import com.gainus.gaiapp.usecases.DeleteTaskUseCase
@@ -12,8 +13,9 @@ import org.koin.dsl.module
 
 val appModule = module {
     // Singletons
-    single<TaskRepository> { InMemoryTaskRepository() }
+    single<TaskRepository> { InMemoryTaskRepository() } // Will be replaced in TODO-016
     factory<() -> String> { { randomUUID() } }
+    single { get<AppDatabase>().taskDao() } // Provide TaskDao from AppDatabase
 
     // Use Cases
     factory { ObserveTasksUseCase(get()) }
