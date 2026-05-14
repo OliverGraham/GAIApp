@@ -36,6 +36,7 @@ fun TodoListScreen(
     onTaskTitleChange: (String) -> Unit,
     onAddTask: () -> Unit,
     onToggleTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit,
 ) {
     MaterialTheme {
         Column(
@@ -123,6 +124,7 @@ fun TodoListScreen(
                                     text = task.title,
                                     modifier = Modifier.weight(1f).padding(start = 8.dp),
                                 )
+                                Button(onClick = { onDeleteTask(task) }) { Text("Delete") }
                             }
                         }
                     }
@@ -140,6 +142,7 @@ fun TodoListScreen(viewModel: TodoViewModel = koinViewModel()) {
         onTaskTitleChange = viewModel::onTaskTitleChange,
         onAddTask = viewModel::addTask,
         onToggleTask = viewModel::toggleTask,
+        onDeleteTask = viewModel::deleteTask,
     )
 }
 
@@ -151,6 +154,7 @@ fun TodoListScreenLoadingPreview() {
         onTaskTitleChange = {},
         onAddTask = {},
         onToggleTask = {},
+        onDeleteTask = {},
     )
 }
 
@@ -162,6 +166,27 @@ fun TodoListScreenErrorPreview() {
         onTaskTitleChange = {},
         onAddTask = {},
         onToggleTask = {},
+        onDeleteTask = {},
+    )
+}
+
+@Preview
+@Composable
+fun TodoListScreenWithTasksPreview() {
+    TodoListScreen(
+        uiState =
+            TodoUiState(
+                tasks =
+                    listOf(
+                        Task("1", "Buy groceries", false),
+                        Task("2", "Walk the dog", true),
+                        Task("3", "Finish report", false),
+                    )
+            ),
+        onTaskTitleChange = {},
+        onAddTask = {},
+        onToggleTask = {},
+        onDeleteTask = {},
     )
 }
 
