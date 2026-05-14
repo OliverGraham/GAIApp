@@ -14,6 +14,7 @@ junit = "4.13.2"
 koin = "4.2.1"
 material3 = "1.10.0-alpha05"
 kotlin = "2.3.21"
+kotlinx-coroutines = "1.8.0" # Added for consistency with core
 ksp = "2.3.4"
 room = "2.8.4"
 sqlite = "2.6.1"
@@ -40,6 +41,8 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" } # Updated to use version.ref
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" } # Added for testing
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 
