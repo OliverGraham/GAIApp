@@ -43,7 +43,7 @@ com.gai.gaiapp
 
 ## Platform support
 
-GAIApp is built with Kotlin Multiplatform Compose and is intended to run on both Android and iOS.
+GAIApp is built with Kotlin Multiplatform Compose and runs on both Android and iOS.
 
 The project uses shared Kotlin and shared Compose UI where practical, while still supporting platform-specific app entry points.
 
