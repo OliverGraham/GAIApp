@@ -1,12 +1,30 @@
 # GAIApp
 
-GAIApp is an experimental Kotlin Multiplatform Compose to-do app.
+GAIApp is an experimental Kotlin Multiplatform Compose to-do app for Android and iOS.
 
-The app is intentionally simple. It is a demo project for testing a local-ish, ticket-driven agentic development workflow using Aider and Gemini.
+The main purpose of this project is to demonstrate an agentic AI development workflow. The app itself is intentionally simple; the focus is the workflow used to build it: ticket-driven development, AI-assisted implementation, automated branch creation, formatting, build validation, pull request creation, and auto-merge.
+
+## Purpose
+
+This repo is a practical experiment in using an AI coding agent as the primary implementation loop.
+
+Most of the app was built by running a local workflow script that selected backlog tickets, prompted Aider, allowed the agent to edit the repo directly, validated the build, and opened pull requests.
+
+The goal was not to build a complex to-do app. The goal was to test how far an agentic workflow could go when paired with:
+
+- Kotlin Multiplatform
+- Compose Multiplatform
+- Android and iOS targets
+- Aider
+- Gemini API
+- Ticket-driven development
+- Automated Git branching
+- Automated pull request creation
+- Build-gated ticket completion
 
 ## App
 
-GAIApp is a basic to-do list app with shared Compose UI.
+GAIApp is a basic cross-platform to-do list demo with shared Compose UI.
 
 Current features include:
 
@@ -23,9 +41,13 @@ The package name is:
 com.gai.gaiapp
 ```
 
-## Agentic workflow
+## Platform support
 
-Most of this project was built by running an agent script against backlog tickets.
+GAIApp is built with Kotlin Multiplatform Compose and is intended to run on both Android and iOS.
+
+The project uses shared Kotlin and shared Compose UI where practical, while still supporting platform-specific app entry points.
+
+## Agentic workflow
 
 The backlog lives at:
 
@@ -55,9 +77,17 @@ python3 -m aider
 
 Gemini is used through `GEMINI_API_KEY`.
 
-## What this project is testing
+## What this project demonstrates
 
-This repo is testing whether a small app can be built mostly by letting an agent work through a structured backlog.
+This project demonstrates a lightweight agentic software development loop:
+
+- Backlog-first task selection
+- AI-generated code changes
+- Direct repository editing through Aider
+- Conservative automation around Git, formatting, and builds
+- Build-gated ticket completion
+- Pull request creation through GitHub CLI
+- Human-in-the-loop intervention only when needed
 
 Roughly 90% of the app work came from running the ticket script and letting the agent make code changes directly.
 
@@ -78,7 +108,7 @@ The workflow is intentionally conservative:
 - Formatting is attempted once with Spotless if available.
 - The build is run once.
 
-This keeps the automation simple and easier to inspect.
+This keeps the automation simple, inspectable, and easier to trust.
 
 ## Backlog style
 
@@ -104,4 +134,4 @@ Completed ticket IDs are also appended to:
 
 This is a demo project, not a production app.
 
-The goal is to explore a practical agent-assisted development loop for a Kotlin Multiplatform Compose app using simple tickets, direct repo edits, and normal GitHub pull requests.
+The goal is to explore a practical AI-assisted development loop for a Kotlin Multiplatform Compose app using simple tickets, direct repo edits, build validation, and normal GitHub pull requests.
