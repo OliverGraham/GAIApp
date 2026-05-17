@@ -1,4 +1,4 @@
-package com.gainus.gaiapp.data.local.database
+package com.gai.gaiapp.data.local.database
 
 import androidx.room.Dao
 import androidx.room.Delete

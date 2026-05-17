@@ -62,7 +62,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.gainus.gaiapp"
+    namespace = "com.gai.gaiapp"
 
     compileSdk =
         libs.versions.android.compileSdk
@@ -70,7 +70,7 @@ android {
             .toInt()
 
     defaultConfig {
-        applicationId = "com.gainus.gaiapp"
+        applicationId = "com.gai.gaiapp"
         minSdk =
             libs.versions.android.minSdk
                 .get()
@@ -108,7 +108,6 @@ room {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 
-    // add("kspCommonMainMetadata", libs.room.compiler)
     add("kspAndroid", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)

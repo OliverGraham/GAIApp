@@ -1,4 +1,4 @@
-package com.gainus.gaiapp
+package com.gai.gaiapp
 
 class Greeting {
     private val platform = getPlatform()

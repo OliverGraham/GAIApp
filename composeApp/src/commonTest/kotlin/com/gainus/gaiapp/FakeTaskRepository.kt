@@ -1,7 +1,7 @@
-package com.gainus.gaiapp
+package com.gai.gaiapp
 
-import com.gainus.gaiapp.domain.model.Task
-import com.gainus.gaiapp.domain.repository.TaskRepository
+import com.gai.gaiapp.domain.model.Task
+import com.gai.gaiapp.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow

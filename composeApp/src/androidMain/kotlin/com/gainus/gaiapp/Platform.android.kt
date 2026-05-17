@@ -1,4 +1,4 @@
-package com.gainus.gaiapp
+package com.gai.gaiapp
 
 import android.os.Build
 

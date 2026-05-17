@@ -1,7 +1,7 @@
-package com.gainus.gaiapp.domain.usecase
+package com.gai.gaiapp.domain.usecase
 
-import com.gainus.gaiapp.FakeTaskRepository
-import com.gainus.gaiapp.domain.model.Task
+import com.gai.gaiapp.FakeTaskRepository
+import com.gai.gaiapp.domain.model.Task
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

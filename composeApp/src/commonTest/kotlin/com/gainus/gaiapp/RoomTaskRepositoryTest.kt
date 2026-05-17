@@ -1,8 +1,8 @@
-package com.gainus.gaiapp
+package com.gai.gaiapp
 
-import com.gainus.gaiapp.data.local.database.TaskEntity
-import com.gainus.gaiapp.data.local.repository.RoomTaskRepository
-import com.gainus.gaiapp.domain.model.Task
+import com.gai.gaiapp.data.local.database.TaskEntity
+import com.gai.gaiapp.data.local.repository.RoomTaskRepository
+import com.gai.gaiapp.domain.model.Task
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
