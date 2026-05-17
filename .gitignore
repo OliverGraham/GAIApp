@@ -19,3 +19,9 @@ captures
 node_modules/
 .aider*
 aider.chat.history.md
+
+# Android release signing
+*.keystore
+*.jks
+release-upload.keystore
+keystore.properties
