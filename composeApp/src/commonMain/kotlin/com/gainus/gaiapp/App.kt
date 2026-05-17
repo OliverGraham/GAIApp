@@ -1,4 +1,4 @@
-package com.gainus.gaiapp.presentation.ui
+package com.gai.gaiapp.presentation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -10,13 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,9 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gainus.gaiapp.domain.model.Task
-import com.gainus.gaiapp.presentation.viewmodel.TodoUiState
-import com.gainus.gaiapp.presentation.viewmodel.TodoViewModel
+import com.gai.gaiapp.domain.model.Task
+import com.gai.gaiapp.presentation.viewmodel.TodoUiState
+import com.gai.gaiapp.presentation.viewmodel.TodoViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -72,7 +72,7 @@ fun TodoListScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BasicTextField(
+                OutlinedTextField(
                     value = uiState.taskTitle,
                     onValueChange = { onTaskTitleChange(it) },
                     modifier = Modifier.weight(1f),

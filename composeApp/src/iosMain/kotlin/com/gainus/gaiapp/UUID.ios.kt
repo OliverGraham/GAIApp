@@ -1,4 +1,4 @@
-package com.gainus.gaiapp.util
+package com.gai.gaiapp.util
 
 import platform.Foundation.NSUUID
 

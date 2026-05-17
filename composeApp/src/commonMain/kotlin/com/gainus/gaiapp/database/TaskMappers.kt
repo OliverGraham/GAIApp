@@ -1,6 +1,6 @@
-package com.gainus.gaiapp.data.local.database
+package com.gai.gaiapp.data.local.database
 
-import com.gainus.gaiapp.domain.model.Task
+import com.gai.gaiapp.domain.model.Task
 
 // These mappers fulfill part of TODO-014: Add task database schema
 

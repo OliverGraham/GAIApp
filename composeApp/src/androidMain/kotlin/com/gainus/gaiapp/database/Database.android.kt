@@ -1,4 +1,4 @@
-package com.gainus.gaiapp.data.local.database
+package com.gai.gaiapp.data.local.database
 
 import android.content.Context
 import androidx.room.Room

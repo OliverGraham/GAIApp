@@ -1,6 +1,6 @@
-package com.gainus.gaiapp.di
+package com.gai.gaiapp.di
 
-import com.gainus.gaiapp.data.local.database.getDatabaseBuilder
+import com.gai.gaiapp.data.local.database.getDatabaseBuilder
 import org.koin.core.module.Module
 import org.koin.dsl.module
 

@@ -1,10 +1,10 @@
-package com.gainus.gaiapp.data.local.repository
+package com.gai.gaiapp.data.local.repository
 
-import com.gainus.gaiapp.data.local.database.TaskDao
-import com.gainus.gaiapp.data.local.database.toDomain
-import com.gainus.gaiapp.data.local.database.toEntity
-import com.gainus.gaiapp.domain.model.Task
-import com.gainus.gaiapp.domain.repository.TaskRepository
+import com.gai.gaiapp.data.local.database.TaskDao
+import com.gai.gaiapp.data.local.database.toDomain
+import com.gai.gaiapp.data.local.database.toEntity
+import com.gai.gaiapp.domain.model.Task
+import com.gai.gaiapp.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

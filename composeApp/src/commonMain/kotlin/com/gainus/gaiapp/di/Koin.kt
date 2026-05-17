@@ -1,4 +1,4 @@
-package com.gainus.gaiapp.di
+package com.gai.gaiapp.di
 
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin

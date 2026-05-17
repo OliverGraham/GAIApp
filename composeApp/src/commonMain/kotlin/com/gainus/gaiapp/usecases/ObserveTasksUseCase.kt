@@ -1,7 +1,7 @@
-package com.gainus.gaiapp.domain.usecase
+package com.gai.gaiapp.domain.usecase
 
-import com.gainus.gaiapp.domain.model.Task
-import com.gainus.gaiapp.domain.repository.TaskRepository
+import com.gai.gaiapp.domain.model.Task
+import com.gai.gaiapp.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 
 class ObserveTasksUseCase(private val taskRepository: TaskRepository) {
