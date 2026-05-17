@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -61,6 +62,16 @@ kotlin {
     }
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties =
+    Properties().apply {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+
+fun keystoreProperty(name: String): String =
+    keystoreProperties.getProperty(name)
+        ?: error("Missing signing property: $name in keystore.properties")
+
 android {
     namespace = "com.gai.gaiapp"
 
@@ -98,6 +109,23 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file(keystoreProperty("RELEASE_STORE_FILE"))
+            storePassword = keystoreProperty("RELEASE_PASSWORD")
+            keyAlias = keystoreProperty("RELEASE_KEY_ALIAS")
+            keyPassword = keystoreProperty("RELEASE_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
+        }
     }
 }
 
